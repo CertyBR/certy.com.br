@@ -1,0 +1,8 @@
+name = "certy-frontend"
+main = ".svelte-kit/cloudflare/_worker.js"
+compatibility_date = "2026-02-25"
+workers_dev = true
+
+[assets]
+directory = ".svelte-kit/cloudflare"
+binding = "ASSETS"
