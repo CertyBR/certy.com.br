@@ -12,16 +12,10 @@
         : 500;
   $: isNotFound = resolvedStatus === 404;
   $: title = isNotFound ? 'Not Found' : 'Algo saiu do esperado';
-  $: headTitle = isNotFound ? 'Not Found' : `Error ${resolvedStatus}`;
   $: message = isNotFound
     ? 'O endereço que você tentou abrir não existe ou foi movido.'
     : 'Ocorreu um erro inesperado ao carregar esta página.';
 </script>
-
-<svelte:head>
-  <title>{headTitle}</title>
-  <meta name="robots" content="noindex" />
-</svelte:head>
 
 <main class="shell error-shell">
   <header class="site-header">

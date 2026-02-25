@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /emitir
+
+Sitemap: https://certy.com.br/sitemap.xml

@@ -238,13 +238,6 @@
   }
 </script>
 
-<svelte:head>
-  <meta
-    name="description"
-    content="Acompanhe a sessão do certificado SSL, valide o DNS e copie o certificado emitido."
-  />
-</svelte:head>
-
 <main class="shell">
   <header class="site-header" data-reveal>
     <a class="brand" href="/">certy</a>

@@ -73,6 +73,38 @@
         'Se você salvar a URL da sessão, pode voltar a qualquer momento. Caso contrário, basta gerar um novo certificado.'
     }
   ];
+  const homeSeoJsonLd = JSON.stringify(
+    [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'Certy',
+        url: 'https://certy.com.br',
+        sameAs: ['https://zerocert.com.br']
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'Certy',
+        url: 'https://certy.com.br',
+        inLanguage: 'pt-BR'
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: faq.answer
+          }
+        }))
+      }
+    ],
+    null,
+    0
+  );
 
   let domain = '';
   let email = '';
@@ -225,10 +257,7 @@
 </script>
 
 <svelte:head>
-  <meta
-    name="description"
-    content="Certificados SSL gratuitos com validação DNS, experiência rápida e frontend minimalista."
-  />
+  <script type="application/ld+json">{homeSeoJsonLd}</script>
 </svelte:head>
 
 <main class="shell">
@@ -240,7 +269,7 @@
         Benefícios
       </a>
       <a href="/" on:click|preventDefault={() => scrollToSection('faq')}>FAQ</a>
-      <a href="/" on:click|preventDefault={() => scrollToSection('zerocert')}>ZeroCert</a>
+      <a href="https://zerocert.com.br" target="_blank" rel="noreferrer">ZeroCert</a>
     </nav>
   </header>
 
@@ -331,7 +360,10 @@
   </section>
 
   <section class="callout" id="zerocert" data-reveal style="animation-delay: 220ms">
-    <h2>Feito com dedicação pela ZeroCert</h2>
+    <h2>
+      Feito com dedicação pela
+      <a href="https://zerocert.com.br" target="_blank" rel="noreferrer">ZeroCert</a>
+    </h2>
   </section>
 
   <footer class="site-footer" data-reveal style="animation-delay: 260ms">

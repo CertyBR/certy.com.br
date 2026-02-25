@@ -16,14 +16,43 @@
     tone?: ToastTone;
   }
 
+  interface RouteSeoMeta {
+    title: string;
+    description: string;
+    robots?: string;
+    ogType?: 'website' | 'article';
+  }
+
   const MENU_WIDTH = 228;
   const MENU_HEIGHT = 104;
   const MENU_MARGIN = 10;
   const TOAST_DURATION_MS = 2400;
+  const SITE_NAME = 'Certy';
+  const SITE_URL = 'https://certy.com.br';
+  const SITE_LOCALE = 'pt_BR';
+  const DEFAULT_OG_IMAGE_URL = `${SITE_URL}/og/certy-og.svg`;
+  const DEFAULT_OG_IMAGE_ALT = 'Certy - Certificados SSL gratuitos via Let\'s Encrypt';
   const ROUTE_TITLES: Record<string, string> = {
     '/': 'Início',
     '/emitir': 'Acompanhar Sessão',
     '/termos': 'Termos de Uso e Privacidade'
+  };
+  const ROUTE_SEO: Record<string, RouteSeoMeta> = {
+    '/': {
+      title: 'SSL gratuito com Let\'s Encrypt',
+      description:
+        'Certy emite certificados SSL gratuitos com validação DNS, sem cadastro e com fluxo simples.'
+    },
+    '/emitir': {
+      title: 'Acompanhar Sessão',
+      description:
+        'Acompanhe a validação DNS e finalize a emissão do certificado SSL da sua sessão.',
+      robots: 'noindex, nofollow'
+    },
+    '/termos': {
+      title: 'Termos de Uso e Privacidade',
+      description: 'Termos de Uso e Política de Privacidade do Certy.'
+    }
   };
 
   let menuOpen = false;
@@ -33,6 +62,11 @@
   let toasts: ToastItem[] = [];
   const toastTimers = new Map<number, ReturnType<typeof setTimeout>>();
   let pageTitle = 'Certy';
+  let pageDescription = 'Certificados SSL gratuitos com validação DNS.';
+  let pageRobots = 'index, follow';
+  let pageOgType: 'website' | 'article' = 'website';
+  let canonicalUrl = SITE_URL;
+  let pageStatus = 200;
 
   function prettifyRouteSegment(segment: string): string {
     const normalized = segment.replace(/[-_]+/g, ' ').trim();
@@ -42,14 +76,43 @@
 
   $: {
     const pathname = $page.url.pathname;
-    const mappedTitle = ROUTE_TITLES[pathname];
-    if (mappedTitle) {
-      pageTitle = `${mappedTitle} | Certy`;
+    const normalizedStatus = typeof $page.status === 'number' && $page.status > 0 ? $page.status : 200;
+    const isErrorPage = normalizedStatus >= 400;
+    pageStatus = normalizedStatus;
+    canonicalUrl = `${SITE_URL}${pathname || '/'}`;
+
+    if (isErrorPage) {
+      pageTitle = normalizedStatus === 404 ? 'Not Found' : `Error ${normalizedStatus}`;
+      pageDescription =
+        normalizedStatus === 404
+          ? 'A página solicitada não foi encontrada.'
+          : 'Ocorreu um erro ao carregar esta página.';
+      pageRobots = 'noindex, nofollow';
+      pageOgType = 'website';
     } else {
-      const segments = pathname.split('/').filter(Boolean);
-      const lastSegment = segments[segments.length - 1] ?? '';
-      const dynamicTitle = prettifyRouteSegment(decodeURIComponent(lastSegment));
-      pageTitle = `${dynamicTitle} | Certy`;
+      const routeMeta = ROUTE_SEO[pathname];
+      if (routeMeta) {
+        pageTitle = `${routeMeta.title} | ${SITE_NAME}`;
+        pageDescription = routeMeta.description;
+        pageRobots = routeMeta.robots ?? 'index, follow';
+        pageOgType = routeMeta.ogType ?? 'website';
+      } else {
+        const mappedTitle = ROUTE_TITLES[pathname];
+        if (mappedTitle) {
+          pageTitle = `${mappedTitle} | ${SITE_NAME}`;
+          pageDescription = 'Conteúdo oficial do Certy.';
+          pageRobots = 'index, follow';
+          pageOgType = 'website';
+        } else {
+          const segments = pathname.split('/').filter(Boolean);
+          const lastSegment = segments[segments.length - 1] ?? '';
+          const dynamicTitle = prettifyRouteSegment(decodeURIComponent(lastSegment));
+          pageTitle = `${dynamicTitle} | ${SITE_NAME}`;
+          pageDescription = 'Conteúdo oficial do Certy.';
+          pageRobots = 'index, follow';
+          pageOgType = 'website';
+        }
+      }
     }
   }
 
@@ -165,6 +228,36 @@
 
 <svelte:head>
   <title>{pageTitle}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <meta name="description" content={pageDescription} />
+  <meta name="robots" content={pageRobots} />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="theme-color" content="#f8f5ef" />
+  <link rel="canonical" href={canonicalUrl} />
+  <link rel="alternate" hreflang="pt-BR" href={canonicalUrl} />
+
+  <meta property="og:type" content={pageOgType} />
+  <meta property="og:site_name" content={SITE_NAME} />
+  <meta property="og:locale" content={SITE_LOCALE} />
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={pageDescription} />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta property="og:image" content={DEFAULT_OG_IMAGE_URL} />
+  <meta property="og:image:type" content="image/svg+xml" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content={DEFAULT_OG_IMAGE_ALT} />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={pageTitle} />
+  <meta name="twitter:description" content={pageDescription} />
+  <meta name="twitter:image" content={DEFAULT_OG_IMAGE_URL} />
+  <meta name="twitter:image:alt" content={DEFAULT_OG_IMAGE_ALT} />
+
+  {#if pageStatus >= 400}
+    <meta name="googlebot" content="noindex, nofollow" />
+  {/if}
 </svelte:head>
 
 <slot />
