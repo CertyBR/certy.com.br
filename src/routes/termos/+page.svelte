@@ -54,7 +54,7 @@
 
         <h3>3. Responsabilidades do Usuário</h3>
         <ul>
-          <li>Você é responsável por fornecer informações corretas (domínio e email)</li>
+          <li>Você é responsável por fornecer informações corretas (domínio e e-mail)</li>
           <li>Você deve ter autoridade para configurar registros DNS do domínio</li>
           <li>Você é responsável pela segurança e armazenamento das chaves privadas geradas</li>
           <li>Você deve usar o serviço de acordo com as leis aplicáveis</li>
@@ -102,7 +102,7 @@
             O nome do domínio para o qual você deseja gerar o certificado
           </li>
           <li>
-            <strong>Email:</strong>
+            <strong>e-mail:</strong>
             Usado para registro na Let's Encrypt e validação
           </li>
           <li>
@@ -115,7 +115,7 @@
         <ul>
           <li>Para validar a propriedade do domínio através de registros DNS</li>
           <li>Para gerar certificados SSL através do Let's Encrypt</li>
-          <li>Para validar que o email fornecido é real e não é temporário</li>
+          <li>Para validar que o e-mail fornecido é real e não é temporário</li>
           <li>Para manter registros básicos de certificados emitidos (apenas fingerprints)</li>
         </ul>
 
@@ -127,8 +127,8 @@
             Para gerar os certificados SSL
           </li>
           <li>
-            <strong>Serviços de validação de email:</strong>
-            Para verificar se o email é válido
+            <strong>Serviços de validação de e-mail:</strong>
+            Para verificar se o e-mail é válido
           </li>
         </ul>
         <p>
@@ -141,7 +141,7 @@
           <li>Armazenamos temporariamente os dados da sessão durante o processo de geração</li>
           <li>Todos os dados da sessão são excluídos imediatamente após a geração do certificado</li>
           <li>Não armazenamos chaves privadas em nenhum momento</li>
-          <li>Mantemos apenas registros de email, domínio e fingerprint do certificado</li>
+          <li>Mantemos apenas registros de e-mail, domínio e fingerprint do certificado</li>
         </ul>
 
         <h3>5. Segurança</h3>
@@ -170,7 +170,7 @@
         <ul>
           <li>Dados de sessão: Excluídos imediatamente após geração do certificado</li>
           <li>
-            Registros de email/domínio/fingerprint: Mantidos indefinidamente para fins de auditoria
+            Registros de e-mail/domínio/fingerprint: Mantidos indefinidamente para fins de auditoria
           </li>
           <li>Sessões expiradas: Excluídas automaticamente após 24 horas</li>
         </ul>
@@ -225,10 +225,6 @@
     border-radius: 1.15rem;
     padding: 1.2rem;
     background: var(--card);
-  }
-
-  .terms-back {
-    margin-bottom: 0.6rem;
   }
 
   .terms-date {
@@ -309,10 +305,6 @@
   @media (max-width: 480px) {
     .terms-shell {
       padding: 0.82rem;
-    }
-
-    .terms-back {
-      width: 100%;
     }
 
     .terms-card ul {

@@ -27,6 +27,9 @@
   const MENU_HEIGHT = 104;
   const MENU_MARGIN = 10;
   const TOAST_DURATION_MS = 2400;
+  const THEME_STORAGE_KEY = 'certy-theme';
+  const LIGHT_THEME_COLOR = '#f8f5ef';
+  const DARK_THEME_COLOR = '#0d1210';
   const SITE_NAME = 'Certy';
   const SITE_URL = 'https://certy.com.br';
   const SITE_LOCALE = 'pt_BR';
@@ -67,6 +70,8 @@
   let pageOgType: 'website' | 'article' = 'website';
   let canonicalUrl = SITE_URL;
   let pageStatus = 200;
+  let themeColorMeta = LIGHT_THEME_COLOR;
+  let themeMode: 'light' | 'dark' = 'light';
 
   function prettifyRouteSegment(segment: string): string {
     const normalized = segment.replace(/[-_]+/g, ' ').trim();
@@ -188,7 +193,48 @@
     window.location.reload();
   }
 
+  function setTheme(mode: 'light' | 'dark', persist = true): void {
+    themeMode = mode;
+    themeColorMeta = mode === 'dark' ? DARK_THEME_COLOR : LIGHT_THEME_COLOR;
+    document.documentElement.setAttribute('data-theme', mode);
+
+    if (persist) {
+      window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+    }
+  }
+
+  function toggleTheme(): void {
+    const nextMode = themeMode === 'dark' ? 'light' : 'dark';
+    setTheme(nextMode, true);
+    pushToast(nextMode === 'dark' ? 'Tema escuro ativado.' : 'Tema claro ativado.', 'info');
+  }
+
   onMount(() => {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const initialTheme =
+      storedTheme === 'light' || storedTheme === 'dark'
+        ? (storedTheme as 'light' | 'dark')
+        : systemThemeQuery.matches
+          ? 'dark'
+          : 'light';
+
+    setTheme(initialTheme, false);
+
+    const handleSystemThemeChange = (event: MediaQueryListEvent): void => {
+      const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        return;
+      }
+      setTheme(event.matches ? 'dark' : 'light', false);
+    };
+
+    if (typeof systemThemeQuery.addEventListener === 'function') {
+      systemThemeQuery.addEventListener('change', handleSystemThemeChange);
+    } else {
+      systemThemeQuery.addListener(handleSystemThemeChange);
+    }
+
     const handleToastEvent = (event: Event): void => {
       const customEvent = event as CustomEvent<ToastDetail>;
       const message = customEvent.detail?.message ?? '';
@@ -218,6 +264,13 @@
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('certy:toast', handleToastEvent);
+
+      if (typeof systemThemeQuery.removeEventListener === 'function') {
+        systemThemeQuery.removeEventListener('change', handleSystemThemeChange);
+      } else {
+        systemThemeQuery.removeListener(handleSystemThemeChange);
+      }
+
       for (const timer of toastTimers.values()) {
         clearTimeout(timer);
       }
@@ -235,7 +288,7 @@
   <meta name="description" content={pageDescription} />
   <meta name="robots" content={pageRobots} />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta name="theme-color" content="#f8f5ef" />
+  <meta name="theme-color" content={themeColorMeta} />
   <link rel="canonical" href={canonicalUrl} />
   <link rel="alternate" hreflang="pt-BR" href={canonicalUrl} />
 
@@ -263,6 +316,28 @@
 </svelte:head>
 
 <slot />
+
+<button
+  class="theme-toggle"
+  type="button"
+  on:click={toggleTheme}
+  aria-label={themeMode === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+  aria-pressed={themeMode === 'dark'}
+>
+  <span class="theme-toggle-icon" aria-hidden="true">
+    {#if themeMode === 'dark'}
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4.6"></circle>
+        <path d="M12 2.6v2.5M12 18.9v2.5M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M2.6 12h2.5M18.9 12h2.5M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"></path>
+      </svg>
+    {:else}
+      <svg viewBox="0 0 24 24">
+        <path d="M14.6 3.2a8.9 8.9 0 1 0 6.2 14.9a9.4 9.4 0 1 1-6.2-14.9z"></path>
+      </svg>
+    {/if}
+  </span>
+  <span>{themeMode === 'dark' ? 'Tema claro' : 'Tema escuro'}</span>
+</button>
 
 {#if menuOpen}
   <div
@@ -310,12 +385,10 @@
     width: 228px;
     padding: 0.34rem;
     border-radius: 0.78rem;
-    border: 1px solid rgba(45, 43, 39, 0.18);
-    background: rgba(246, 244, 240, 0.92);
+    border: 1px solid var(--context-border);
+    background: var(--context-bg);
     backdrop-filter: blur(14px);
-    box-shadow:
-      0 16px 30px -20px rgba(18, 18, 18, 0.45),
-      0 1px 0 rgba(255, 255, 255, 0.9) inset;
+    box-shadow: 0 16px 30px -20px rgba(6, 14, 9, 0.56);
   }
 
   .macos-context-item {
@@ -323,7 +396,7 @@
     border: 0;
     border-radius: 0.56rem;
     background: transparent;
-    color: #1f1d1a;
+    color: var(--context-text);
     text-align: left;
     font: inherit;
     font-size: 0.88rem;
@@ -332,14 +405,14 @@
   }
 
   .macos-context-item:hover {
-    background: #1f1d1a;
-    color: #ffffff;
+    background: var(--context-hover-bg);
+    color: var(--context-hover-text);
   }
 
   .macos-context-item:focus-visible {
     outline: none;
-    background: #1f1d1a;
-    color: #ffffff;
+    background: var(--context-hover-bg);
+    color: var(--context-hover-text);
   }
 
   .macos-toast-stack {
@@ -355,26 +428,89 @@
 
   .macos-toast {
     border-radius: 999px;
-    border: 1px solid rgba(45, 43, 39, 0.18);
-    background: rgba(246, 244, 240, 0.95);
+    border: 1px solid var(--toast-border);
+    background: var(--toast-bg);
     backdrop-filter: blur(12px);
     padding: 0.4rem 0.72rem;
     font-size: 0.82rem;
-    color: #1f1d1a;
-    box-shadow: 0 12px 24px -18px rgba(18, 18, 18, 0.45);
+    color: var(--toast-text);
+    box-shadow: 0 12px 24px -18px rgba(6, 12, 8, 0.58);
     max-width: min(90vw, 740px);
     text-align: center;
   }
 
   .macos-toast-success {
-    border-color: #abd7be;
-    background: rgba(236, 250, 243, 0.95);
-    color: #1c5c34;
+    border-color: var(--toast-success-border);
+    background: var(--toast-success-bg);
+    color: var(--toast-success-text);
   }
 
   .macos-toast-error {
-    border-color: #e2b5b5;
-    background: rgba(253, 241, 241, 0.95);
-    color: #7f2a2a;
+    border-color: var(--toast-error-border);
+    background: var(--toast-error-bg);
+    color: var(--toast-error-text);
+  }
+
+  .theme-toggle {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 9998;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 999px;
+    background: var(--surface-glass-strong);
+    backdrop-filter: blur(var(--glass-blur));
+    color: var(--ink);
+    min-height: 2.4rem;
+    padding: 0 0.8rem;
+    font: inherit;
+    font-size: 0.82rem;
+    box-shadow: 0 14px 24px -20px rgba(2, 68, 32, 0.5);
+    transition:
+      border-color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--brand-green);
+    box-shadow: 0 16px 28px -20px rgba(4, 124, 56, 0.65);
+  }
+
+  .theme-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus-ring);
+  }
+
+  .theme-toggle-icon {
+    width: 1rem;
+    height: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  .theme-toggle-icon svg {
+    width: 1rem;
+    height: 1rem;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  @media (max-width: 760px) {
+    .theme-toggle {
+      right: 0.72rem;
+      bottom: 0.72rem;
+      min-height: 2.25rem;
+      font-size: 0.78rem;
+      padding: 0 0.72rem;
+    }
   }
 </style>

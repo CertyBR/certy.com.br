@@ -55,14 +55,14 @@
     width: min(860px, 96vw);
     margin: 2rem auto 0;
     background:
-      radial-gradient(circle at 92% -8%, rgba(214, 240, 235, 0.9), transparent 44%),
-      radial-gradient(circle at 2% 120%, rgba(244, 233, 214, 0.86), transparent 38%),
+      radial-gradient(circle at 92% -8%, var(--brand-green-soft), transparent 44%),
+      radial-gradient(circle at 2% 120%, var(--brand-gold-soft), transparent 38%),
       var(--card);
   }
 
   .error-code {
     margin: 0 0 0.2rem;
-    color: #857c71;
+    color: var(--muted);
     font-family: 'Newsreader', serif;
     font-size: clamp(2.1rem, 7vw, 4.1rem);
     line-height: 0.9;
@@ -74,15 +74,15 @@
 
   .error-text {
     margin: 0 0 0.9rem;
-    color: #5e5650;
+    color: var(--muted);
     max-width: 55ch;
   }
 
   .error-detail {
     margin: 0 0 0.9rem;
-    color: #8a3737;
-    border: 1px solid #e7c8c8;
-    background: #fff1f1;
+    color: var(--error-soft);
+    border: 1px solid var(--error-border);
+    background: var(--error-bg);
     border-radius: 0.68rem;
     padding: 0.55rem 0.7rem;
     font-size: 0.9rem;
