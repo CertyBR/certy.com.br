@@ -356,6 +356,11 @@ code {
   font-size: 0.8rem;
 }
 
+.field-hint {
+  color: #666059;
+  font-size: 0.8rem;
+}
+
 .field input {
   min-height: 2.8rem;
   width: 100%;

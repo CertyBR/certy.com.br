@@ -2,7 +2,12 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { createCertificateSession, hasApiBaseUrl } from '$lib/api/certy';
+  import {
+    createCertificateSession,
+    hasApiBaseUrl,
+    validateEmailAddress,
+    type EmailValidationPayload
+  } from '$lib/api/certy';
   import { notify } from '$lib/toast';
 
   interface Benefit {
@@ -111,6 +116,7 @@
   let domainError = '';
   let emailError = '';
   let isCreating = false;
+  let isValidatingEmail = false;
   let hashModal: HashModal | null = null;
 
   onMount(() => {
@@ -192,6 +198,72 @@
     return '';
   }
 
+  function emailValidationMessage(payload: EmailValidationPayload): string {
+    if (!payload.format_valid) {
+      return 'Formato de e-mail inválido.';
+    }
+    if (payload.is_disposable) {
+      return 'Use um e-mail permanente. E-mails descartáveis não são aceitos.';
+    }
+    if (!payload.dns_valid) {
+      return 'Domínio de e-mail sem DNS/MX válido.';
+    }
+    if (payload.errors.length > 0) {
+      return payload.errors[0] ?? 'E-mail inválido.';
+    }
+    return 'E-mail inválido.';
+  }
+
+  function isEmailValidationAccepted(payload: EmailValidationPayload): boolean {
+    return payload.valid && payload.format_valid && !payload.is_disposable && payload.dns_valid;
+  }
+
+  async function validateEmailWithLikn(
+    rawEmail: string,
+    options: { onNetworkError: 'block' | 'allow' } = { onNetworkError: 'allow' }
+  ): Promise<boolean> {
+    const normalizedEmail = rawEmail.trim().toLowerCase();
+    const formatError = validateEmailFormat(normalizedEmail);
+    if (formatError) {
+      emailError = formatError;
+      return false;
+    }
+
+    isValidatingEmail = true;
+    try {
+      const payload = await validateEmailAddress(normalizedEmail);
+      if (!isEmailValidationAccepted(payload)) {
+        emailError = emailValidationMessage(payload);
+        return false;
+      }
+
+      emailError = '';
+      return true;
+    } catch (error) {
+      if (options.onNetworkError === 'block') {
+        emailError =
+          'Não foi possível validar o e-mail no momento. Tente novamente em alguns instantes.';
+        return false;
+      }
+
+      notify(
+        'Validação externa de e-mail indisponível no navegador. O backend validará no envio.',
+        'info'
+      );
+      return true;
+    } finally {
+      isValidatingEmail = false;
+    }
+  }
+
+  async function handleEmailBlur(): Promise<void> {
+    email = email.trim().toLowerCase();
+    const formatError = validateEmailFormat(email);
+    emailError = formatError;
+    if (formatError) return;
+    await validateEmailWithLikn(email, { onNetworkError: 'allow' });
+  }
+
   function validateClientForm(): boolean {
     domainError = validateDomainFormat(domain);
     emailError = validateEmailFormat(email);
@@ -209,6 +281,12 @@
 
     if (!validateClientForm()) {
       notify('Revise os campos e tente novamente.', 'error');
+      return;
+    }
+
+    const hasValidEmail = await validateEmailWithLikn(email, { onNetworkError: 'block' });
+    if (!hasValidEmail) {
+      notify('Use um e-mail válido e não descartável.', 'error');
       return;
     }
 
@@ -317,18 +395,25 @@
         <input
           type="email"
           bind:value={email}
-          on:blur={() => (emailError = validateEmailFormat(email))}
+          on:blur={handleEmailBlur}
           placeholder="ops@example.com"
           autocomplete="email"
           required
         />
+        {#if isValidatingEmail}
+          <small class="field-hint">Validando e-mail...</small>
+        {/if}
         {#if emailError}
           <small class="field-error">{emailError}</small>
         {/if}
       </label>
 
       <div class="actions">
-        <button class="btn btn-primary" type="submit" disabled={isCreating || !hasApiBaseUrl()}>
+        <button
+          class="btn btn-primary"
+          type="submit"
+          disabled={isCreating || isValidatingEmail || !hasApiBaseUrl()}
+        >
           {isCreating ? 'Criando sessão...' : 'Criar sessão'}
         </button>
       </div>
