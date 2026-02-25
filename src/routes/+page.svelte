@@ -338,6 +338,24 @@
       copyInfo = `Não foi possível copiar ${label.toLowerCase()}.`;
     }
   }
+
+  function startNewSession(): void {
+    session = null;
+    sessionId = '';
+    domain = '';
+    email = '';
+    domainError = '';
+    emailError = '';
+    formError = '';
+    formInfo = '';
+    copyInfo = '';
+
+    if (browser) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('session');
+      window.history.replaceState(null, '', url.toString());
+    }
+  }
 </script>
 
 <svelte:head>
@@ -385,52 +403,62 @@
   <section id="emitir" class="stack issuer" data-reveal style="animation-delay: 140ms">
     <h2 class="section-title">Emitir Certificado</h2>
 
-    <form class="issue-form" on:submit|preventDefault={handleCreateSession}>
-      <label class="field">
-        <span>Domínio</span>
-        <input
-          type="text"
-          bind:value={domain}
-          on:blur={() => (domainError = validateDomainFormat(domain))}
-          placeholder="example.com ou *.example.com"
-          autocomplete="off"
-          required
-        />
-        {#if domainError}
-          <small class="field-error">{domainError}</small>
-        {/if}
-      </label>
+    {#if !sessionId}
+      <form class="issue-form" on:submit|preventDefault={handleCreateSession}>
+        <label class="field">
+          <span>Domínio</span>
+          <input
+            type="text"
+            bind:value={domain}
+            on:blur={() => (domainError = validateDomainFormat(domain))}
+            placeholder="example.com ou *.example.com"
+            autocomplete="off"
+            required
+          />
+          {#if domainError}
+            <small class="field-error">{domainError}</small>
+          {/if}
+        </label>
 
-      <label class="field">
-        <span>Email</span>
-        <input
-          type="email"
-          bind:value={email}
-          on:blur={() => (emailError = validateEmailFormat(email))}
-          placeholder="ops@example.com"
-          autocomplete="email"
-          required
-        />
-        {#if emailError}
-          <small class="field-error">{emailError}</small>
-        {/if}
-      </label>
+        <label class="field">
+          <span>Email</span>
+          <input
+            type="email"
+            bind:value={email}
+            on:blur={() => (emailError = validateEmailFormat(email))}
+            placeholder="ops@example.com"
+            autocomplete="email"
+            required
+          />
+          {#if emailError}
+            <small class="field-error">{emailError}</small>
+          {/if}
+        </label>
 
-      <div class="actions">
-        <button class="btn btn-primary" type="submit" disabled={isCreating || !hasApiBaseUrl()}>
-          {isCreating ? 'Criando sessão...' : 'Criar sessão'}
-        </button>
-
-        <button
-          class="btn btn-ghost"
-          type="button"
-          on:click={() => refreshSession()}
-          disabled={isRefreshing || !sessionId}
-        >
-          {isRefreshing ? 'Atualizando...' : 'Atualizar sessão'}
-        </button>
-      </div>
-    </form>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit" disabled={isCreating || !hasApiBaseUrl()}>
+            {isCreating ? 'Criando sessão...' : 'Criar sessão'}
+          </button>
+        </div>
+      </form>
+    {:else}
+      <article class="session-mode">
+        <p>Uma sessão ativa foi detectada. Domínio e email ficam bloqueados para evitar confusão.</p>
+        <div class="actions">
+          <button
+            class="btn btn-primary"
+            type="button"
+            on:click={() => refreshSession()}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? 'Atualizando...' : 'Atualizar sessão'}
+          </button>
+          <button class="btn btn-ghost" type="button" on:click={startNewSession}>
+            Iniciar nova sessão
+          </button>
+        </div>
+      </article>
+    {/if}
 
     {#if formError}
       <p class="flash flash-error">{formError}</p>
@@ -441,10 +469,15 @@
     {#if copyInfo}
       <p class="flash flash-info">{copyInfo}</p>
     {/if}
+    {#if sessionId && !session && isRefreshing}
+      <p class="flash flash-info">Carregando sessão...</p>
+    {/if}
 
     {#if session}
       <article class="session-card">
         <div class="session-meta">
+          <p><strong>Domínio:</strong> {session.domain}</p>
+          <p><strong>Email:</strong> {session.email}</p>
           <p>
             <strong>Status:</strong>
             <span class="status-pill" data-status={session.status}>{statusLabel(session.status)}</span>
