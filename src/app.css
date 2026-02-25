@@ -458,6 +458,54 @@ code {
   font-weight: 600;
 }
 
+.dns-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+}
+
+.dns-inline-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.dns-inline-value code {
+  max-width: min(100%, 68ch);
+  overflow-wrap: anywhere;
+}
+
+.copy-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.58rem;
+  border: 1px solid var(--line);
+  background: #fffdfa;
+  color: #544d46;
+  padding: 0;
+}
+
+.copy-icon-btn:hover {
+  border-color: #c8c0b5;
+  color: #1f1d1a;
+  background: #fff;
+}
+
+.copy-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(24, 22, 19, 0.14);
+}
+
+.copy-icon-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
 .pem-card {
   margin-top: 0.9rem;
   border: 1px solid var(--line);
@@ -596,6 +644,103 @@ code {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 0.15rem;
+}
+
+.macos-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(23, 20, 17, 0.28);
+  backdrop-filter: blur(8px);
+}
+
+.macos-modal {
+  width: min(860px, 94vw);
+  max-height: min(88vh, 820px);
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(43, 39, 35, 0.25);
+  background: rgba(249, 247, 243, 0.96);
+  box-shadow:
+    0 42px 70px -45px rgba(13, 11, 9, 0.72),
+    0 1px 0 rgba(255, 255, 255, 0.88) inset;
+}
+
+.macos-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  min-height: 2.3rem;
+  padding: 0 0.8rem;
+  border-bottom: 1px solid rgba(43, 39, 35, 0.12);
+  background: linear-gradient(180deg, rgba(242, 239, 233, 0.9), rgba(236, 231, 224, 0.9));
+}
+
+.macos-dot {
+  width: 0.74rem;
+  height: 0.74rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0;
+}
+
+.macos-dot-close {
+  border-color: #c04b43;
+  background: #ff5f57;
+}
+
+.macos-modal-title {
+  margin-left: 0.2rem;
+  font-size: 0.82rem;
+  color: #4f4841;
+}
+
+.macos-modal-content {
+  max-height: calc(min(88vh, 820px) - 2.3rem);
+  overflow: auto;
+  padding: 1rem;
+}
+
+.macos-modal-content h2 {
+  margin: 0 0 0.25rem;
+  font-family: 'Newsreader', serif;
+  font-size: clamp(1.5rem, 3.7vw, 2.2rem);
+}
+
+.macos-modal-content > p {
+  margin: 0 0 0.8rem;
+  color: var(--muted);
+}
+
+.macos-modal-faq-list {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.macos-modal-faq-item {
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: #fffdf9;
+  padding: 0.82rem 0.9rem;
+}
+
+.macos-modal-faq-item summary {
+  font-weight: 600;
+  list-style: none;
+}
+
+.macos-modal-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.macos-modal-faq-item p {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
 }
 
 [data-reveal] {

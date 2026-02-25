@@ -39,6 +39,10 @@
     silent?: boolean;
   }
 
+  interface CloseHashModalOptions {
+    clearHash?: boolean;
+  }
+
   const benefits: Benefit[] = [
     {
       title: '100% Gratuito',
@@ -112,19 +116,40 @@
   let isCreating = false;
   let isRefreshing = false;
   let isFinalizing = false;
+  let hashModal: 'faq' | null = null;
 
   onMount(() => {
+    const syncHashModal = (): void => {
+      const hash = window.location.hash.trim().toLowerCase();
+      hashModal = hash === '#faq' ? 'faq' : null;
+    };
+
+    const handleModalKeydown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && hashModal) {
+        closeHashModal();
+      }
+    };
+
+    window.addEventListener('hashchange', syncHashModal);
+    window.addEventListener('keydown', handleModalKeydown);
+
     if (!hasApiBaseUrl()) {
       formError = 'Serviço temporariamente indisponível. Tente novamente em instantes.';
-      return;
+    } else {
+      const query = new URLSearchParams(window.location.search);
+      const sessionFromQuery = query.get('session');
+      if (sessionFromQuery) {
+        sessionId = sessionFromQuery;
+        void refreshSession(sessionFromQuery, { silent: true });
+      }
     }
 
-    const query = new URLSearchParams(window.location.search);
-    const sessionFromQuery = query.get('session');
-    if (sessionFromQuery) {
-      sessionId = sessionFromQuery;
-      void refreshSession(sessionFromQuery, { silent: true });
-    }
+    syncHashModal();
+
+    return () => {
+      window.removeEventListener('hashchange', syncHashModal);
+      window.removeEventListener('keydown', handleModalKeydown);
+    };
   });
 
   function statusLabel(status: SessionStatus | string | null | undefined): string {
@@ -378,6 +403,23 @@
       window.history.replaceState(null, '', url.toString());
     }
   }
+
+  function closeHashModal(options: CloseHashModalOptions = {}): void {
+    const { clearHash = true } = options;
+    hashModal = null;
+
+    if (browser && clearHash && window.location.hash) {
+      const url = new URL(window.location.href);
+      url.hash = '';
+      window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+    }
+  }
+
+  function handleHashModalBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      closeHashModal();
+    }
+  }
 </script>
 
 <svelte:head>
@@ -463,23 +505,6 @@
           </button>
         </div>
       </form>
-    {:else}
-      <article class="session-mode">
-        <p>Uma sessão ativa foi detectada. Domínio e email ficam bloqueados para evitar confusão.</p>
-        <div class="actions">
-          <button
-            class="btn btn-primary"
-            type="button"
-            on:click={() => refreshSession()}
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? 'Atualizando...' : 'Atualizar sessão'}
-          </button>
-          <button class="btn btn-ghost" type="button" on:click={startNewSession}>
-            Iniciar nova sessão
-          </button>
-        </div>
-      </article>
     {/if}
 
     {#if formError}
@@ -508,26 +533,6 @@
           <p><strong>Expira em:</strong> {formatUnixTimestamp(session.expires_at)}</p>
         </div>
 
-        <div class="actions">
-          <button
-            class="btn btn-primary"
-            type="button"
-            on:click={handleFinalizeSession}
-            disabled={isFinalizing || !sessionId || session.status === 'issued'}
-          >
-            {isFinalizing ? 'Finalizando...' : 'Validar DNS e emitir'}
-          </button>
-
-          <button
-            class="btn btn-ghost"
-            type="button"
-            on:click={() => copyText(buildSessionLink(), 'Link da sessão')}
-            disabled={!sessionId}
-          >
-            Copiar link da sessão
-          </button>
-        </div>
-
         {#if session.last_error}
           <p class="flash flash-error">{session.last_error}</p>
         {/if}
@@ -537,24 +542,54 @@
             <article class="dns-card">
               <p class="dns-title">Registro DNS #{index + 1}</p>
               <p><strong>Tipo:</strong> {record.type ?? record.record_type ?? 'TXT'}</p>
-              <p><strong>Nome:</strong> <code>{record.name}</code></p>
-              <p><strong>Valor:</strong> <code>{record.value}</code></p>
-              <div class="actions">
-                <button
-                  class="btn btn-ghost"
-                  type="button"
-                  on:click={() => copyText(record.name, 'Nome DNS')}
-                >
-                  Copiar nome
-                </button>
-                <button
-                  class="btn btn-ghost"
-                  type="button"
-                  on:click={() => copyText(record.value, 'Valor DNS')}
-                >
-                  Copiar valor
-                </button>
-              </div>
+              <p class="dns-row">
+                <strong>Nome:</strong>
+                <span class="dns-inline-value">
+                  <code>{record.name}</code>
+                  <button
+                    class="copy-icon-btn"
+                    type="button"
+                    title="Copiar nome"
+                    aria-label="Copiar nome DNS"
+                    on:click={() => copyText(record.name, 'Nome DNS')}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M9 9h10v10H9zM5 5h10v2H7v8H5z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </button>
+                </span>
+              </p>
+              <p class="dns-row">
+                <strong>Valor:</strong>
+                <span class="dns-inline-value">
+                  <code>{record.value}</code>
+                  <button
+                    class="copy-icon-btn"
+                    type="button"
+                    title="Copiar valor"
+                    aria-label="Copiar valor DNS"
+                    on:click={() => copyText(record.value, 'Valor DNS')}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M9 9h10v10H9zM5 5h10v2H7v8H5z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </button>
+                </span>
+              </p>
             </article>
           {/each}
         </div>
@@ -591,6 +626,26 @@
           </article>
         {/if}
       </article>
+
+      <div class="actions">
+          <button
+            class="btn btn-primary"
+            type="button"
+            on:click={handleFinalizeSession}
+            disabled={isFinalizing || !sessionId || session.status === 'issued'}
+          >
+            {isFinalizing ? 'Finalizando...' : 'Validar DNS e emitir'}
+          </button>
+
+          <button
+            class="btn btn-ghost"
+            type="button"
+            on:click={() => copyText(buildSessionLink(), 'Link da sessão')}
+            disabled={!sessionId}
+          >
+            Copiar link da sessão
+          </button>
+        </div>
     {/if}
   </section>
 
@@ -633,3 +688,46 @@
     </span>
   </footer>
 </main>
+
+{#if hashModal === 'faq'}
+  <div class="macos-modal-backdrop" role="presentation" on:click={handleHashModalBackdropClick}>
+    <div class="macos-modal" role="dialog" aria-modal="true" aria-labelledby="faq-modal-title">
+      <header class="macos-modal-header">
+        <button
+          class="macos-dot macos-dot-close"
+          type="button"
+          aria-label="Fechar"
+          on:click={() => closeHashModal()}
+        ></button>
+        <span class="macos-modal-title">Certy</span>
+      </header>
+
+      <div class="macos-modal-content">
+        <h2 id="faq-modal-title">Perguntas Frequentes</h2>
+        <p>Resumo rápido para quem acessou a URL direta do FAQ.</p>
+
+        <div class="macos-modal-faq-list">
+          {#each faqs as faq}
+            <details class="macos-modal-faq-item">
+              <summary>{faq.question}</summary>
+              <p>{faq.answer}</p>
+            </details>
+          {/each}
+        </div>
+
+        <div class="actions">
+          <a
+            class="btn btn-primary"
+            href="#emitir"
+            on:click={() => closeHashModal({ clearHash: false })}
+          >
+            Ir para emissão
+          </a>
+          <button class="btn btn-ghost" type="button" on:click={() => closeHashModal()}>
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
