@@ -241,8 +241,11 @@ code {
 }
 
 .btn:disabled {
-  opacity: 0.66;
+  opacity: 1;
   transform: none;
+  border-color: #ddd5ca;
+  background: #f2eee7;
+  color: #9a9388;
 }
 
 .btn-primary {
@@ -254,14 +257,22 @@ code {
   background: #13110f;
 }
 
+.btn-primary:disabled {
+  background: #878178;
+  border-color: #878178;
+  color: #f4efe8;
+}
+
 .btn-ghost {
-  border-color: var(--line);
-  color: var(--muted);
+  border-color: #cec5b9;
+  color: #2e2a26;
+  background: #f7f3ec;
 }
 
 .btn-ghost:hover {
-  border-color: #c8c0b5;
+  border-color: #b9b0a4;
   color: var(--ink);
+  background: #fffdf9;
 }
 
 .panel {
@@ -574,6 +585,11 @@ code {
   margin: 0;
   font-family: 'Newsreader', serif;
   font-size: clamp(1.5rem, 3.7vw, 2.3rem);
+  max-width: none;
+}
+
+.session-page-title {
+  white-space: nowrap;
 }
 
 .faq-list {
@@ -828,6 +844,10 @@ code {
 
   .session-meta {
     grid-template-columns: 1fr;
+  }
+
+  .session-page-title {
+    white-space: normal;
   }
 }
 

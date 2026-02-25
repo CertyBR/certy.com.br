@@ -225,7 +225,6 @@
 </script>
 
 <svelte:head>
-  <title>Certy | SSL gratuito com Let's Encrypt</title>
   <meta
     name="description"
     content="Certificados SSL gratuitos com validação DNS, experiência rápida e frontend minimalista."

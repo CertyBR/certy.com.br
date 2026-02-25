@@ -1,5 +1,4 @@
 <svelte:head>
-  <title>Certy | Termos de Uso e Privacidade</title>
   <meta
     name="description"
     content="Termos de uso e política de privacidade da Certy. Documento inicial para frontend."

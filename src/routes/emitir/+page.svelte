@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import {
     finalizeCertificateSession,
@@ -39,10 +40,14 @@
 
   let session: SessionView | null = null;
   let sessionId = '';
-  let hasSessionParam = true;
   let isLoadingSession = false;
   let isRefreshing = false;
   let isFinalizing = false;
+
+  function redirectToHome(): void {
+    if (!browser) return;
+    void goto('/', { replaceState: true });
+  }
 
   onMount(() => {
     if (!hasApiBaseUrl()) {
@@ -53,7 +58,7 @@
     const query = new URLSearchParams(window.location.search);
     const sessionFromQuery = query.get('session')?.trim() ?? '';
     if (!sessionFromQuery) {
-      hasSessionParam = false;
+      redirectToHome();
       return;
     }
 
@@ -143,7 +148,6 @@
   function clearSessionState(): void {
     session = null;
     sessionId = '';
-    hasSessionParam = false;
     isLoadingSession = false;
 
     if (browser) {
@@ -160,7 +164,7 @@
     const { silent = false } = options;
 
     if (!targetSessionId) {
-      hasSessionParam = false;
+      redirectToHome();
       return;
     }
 
@@ -175,7 +179,7 @@
     } catch (error) {
       if (isSessionNotFoundError(error)) {
         clearSessionState();
-        notify('Sessão não encontrada. Inicie uma nova emissão.', 'error');
+        redirectToHome();
         return;
       }
 
@@ -212,7 +216,7 @@
     } catch (error) {
       if (isSessionNotFoundError(error)) {
         clearSessionState();
-        notify('Sessão não encontrada. Inicie uma nova emissão.', 'error');
+        redirectToHome();
         return;
       }
 
@@ -235,7 +239,6 @@
 </script>
 
 <svelte:head>
-  <title>Certy | Acompanhar sessão</title>
   <meta
     name="description"
     content="Acompanhe a sessão do certificado SSL, valide o DNS e copie o certificado emitido."
@@ -253,20 +256,13 @@
   </header>
 
   <section class="stack issuer" data-reveal style="animation-delay: 120ms">
-    <h1 class="section-title">Acompanhar Sessão</h1>
+    <h1 class="section-title session-page-title">Acompanhar Sessão</h1>
     <p class="issuer-lead">
       Esta página é dedicada aos passos da emissão. Atualize o status, valide o DNS e copie seus
       arquivos quando o certificado for emitido.
     </p>
 
-    {#if !hasSessionParam}
-      <article class="session-mode">
-        <p>Nenhuma sessão informada. Inicie uma nova emissão na página inicial.</p>
-        <div class="actions">
-          <a class="btn btn-primary" href="/">Iniciar nova emissão</a>
-        </div>
-      </article>
-    {:else if isLoadingSession && !session}
+    {#if isLoadingSession && !session}
       <article class="session-mode">
         <p>Carregando sessão...</p>
       </article>

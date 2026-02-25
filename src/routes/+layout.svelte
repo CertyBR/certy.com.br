@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import '../app.css';
 
@@ -19,6 +20,11 @@
   const MENU_HEIGHT = 104;
   const MENU_MARGIN = 10;
   const TOAST_DURATION_MS = 2400;
+  const ROUTE_TITLES: Record<string, string> = {
+    '/': 'Início',
+    '/emitir': 'Acompanhar Sessão',
+    '/termos': 'Termos de Uso e Privacidade'
+  };
 
   let menuOpen = false;
   let menuX = 0;
@@ -26,6 +32,26 @@
   let nextToastId = 1;
   let toasts: ToastItem[] = [];
   const toastTimers = new Map<number, ReturnType<typeof setTimeout>>();
+  let pageTitle = 'Certy';
+
+  function prettifyRouteSegment(segment: string): string {
+    const normalized = segment.replace(/[-_]+/g, ' ').trim();
+    if (!normalized) return 'Página';
+    return `${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`;
+  }
+
+  $: {
+    const pathname = $page.url.pathname;
+    const mappedTitle = ROUTE_TITLES[pathname];
+    if (mappedTitle) {
+      pageTitle = `${mappedTitle} | Certy`;
+    } else {
+      const segments = pathname.split('/').filter(Boolean);
+      const lastSegment = segments[segments.length - 1] ?? '';
+      const dynamicTitle = prettifyRouteSegment(decodeURIComponent(lastSegment));
+      pageTitle = `${dynamicTitle} | Certy`;
+    }
+  }
 
   function pushToast(message: string, tone: ToastTone = 'info'): void {
     const trimmed = message.trim();
@@ -136,6 +162,10 @@
     };
   });
 </script>
+
+<svelte:head>
+  <title>{pageTitle}</title>
+</svelte:head>
 
 <slot />
 
