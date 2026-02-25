@@ -27,6 +27,7 @@
   const MENU_HEIGHT = 104;
   const MENU_MARGIN = 10;
   const TOAST_DURATION_MS = 2400;
+  const MAX_VISIBLE_TOASTS = 2;
   const THEME_STORAGE_KEY = 'certy-theme';
   const LIGHT_THEME_COLOR = '#f8f5ef';
   const DARK_THEME_COLOR = '#0d1210';
@@ -126,7 +127,22 @@
     if (!trimmed) return;
 
     const id = nextToastId++;
-    toasts = [...toasts, { id, message: trimmed, tone }];
+    const nextToast: ToastItem = { id, message: trimmed, tone };
+    const nextQueue = [...toasts, nextToast];
+    const overflowCount = Math.max(0, nextQueue.length - MAX_VISIBLE_TOASTS);
+
+    if (overflowCount > 0) {
+      const staleToasts = nextQueue.slice(0, overflowCount);
+      for (const staleToast of staleToasts) {
+        const staleTimer = toastTimers.get(staleToast.id);
+        if (staleTimer) {
+          clearTimeout(staleTimer);
+          toastTimers.delete(staleToast.id);
+        }
+      }
+    }
+
+    toasts = nextQueue.slice(overflowCount);
 
     const timer = setTimeout(() => {
       toasts = toasts.filter((toast) => toast.id !== id);
