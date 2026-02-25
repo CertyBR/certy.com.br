@@ -87,4 +87,30 @@
     padding: 0.55rem 0.7rem;
     font-size: 0.9rem;
   }
+
+  @media (max-width: 760px) {
+    .error-shell {
+      padding-top: 0.75rem;
+    }
+
+    .error-card {
+      width: 100%;
+      margin-top: 1.2rem;
+    }
+
+    .error-text {
+      max-width: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .error-card {
+      margin-top: 0.95rem;
+    }
+
+    .error-detail {
+      padding: 0.5rem 0.62rem;
+      font-size: 0.84rem;
+    }
+  }
 </style>

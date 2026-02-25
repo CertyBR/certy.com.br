@@ -32,8 +32,7 @@
   </header>
 
   <section class="stack terms-shell" data-reveal style="animation-delay: 110ms">
-    <a href="/" class="btn btn-ghost terms-back">Voltar</a>
-
+    <br>
     <h1>Termos de Uso e Política de Privacidade</h1>
     <p class="terms-date">Última atualização: 30 de novembro de 2025</p>
 
@@ -280,5 +279,48 @@
 
   .terms-actions {
     margin-top: 1.8rem;
+  }
+
+  @media (max-width: 760px) {
+    .terms-shell {
+      border-radius: 1rem;
+      padding: 0.95rem;
+    }
+
+    .terms-date {
+      margin: 0.35rem 0 0.85rem;
+      font-size: 0.86rem;
+    }
+
+    .terms-title {
+      margin-bottom: 0.35rem;
+    }
+
+    .terms-card h3 {
+      margin-top: 0.85rem;
+      font-size: 0.98rem;
+    }
+
+    .terms-actions {
+      margin-top: 1.35rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .terms-shell {
+      padding: 0.82rem;
+    }
+
+    .terms-back {
+      width: 100%;
+    }
+
+    .terms-card ul {
+      padding-left: 1rem;
+    }
+
+    .terms-actions .btn {
+      width: 100%;
+    }
   }
 </style>
