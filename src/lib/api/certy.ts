@@ -1,7 +1,13 @@
 import { PUBLIC_API_BASE_URL } from '$env/static/public';
 import { env } from '$env/dynamic/public';
 
-export type SessionStatus = 'pending_dns' | 'validating' | 'issued' | 'failed' | 'expired';
+export type SessionStatus =
+  | 'awaiting_email_verification'
+  | 'pending_dns'
+  | 'validating'
+  | 'issued'
+  | 'failed'
+  | 'expired';
 
 export interface DnsRecord {
   type?: string;
@@ -13,6 +19,10 @@ export interface DnsRecord {
 export interface CreateSessionInput {
   domain: string;
   email: string;
+}
+
+export interface VerifyEmailCodeInput {
+  code: string;
 }
 
 export interface SessionPayload {
@@ -28,6 +38,23 @@ export interface SessionPayload {
   message?: string;
   certificate_pem?: string | null;
   private_key_pem?: string | null;
+  email_verified_at?: number | null;
+  email_verification_expires_at?: number | null;
+  email_verification_attempts?: number;
+}
+
+export interface SessionActionPayload {
+  session_id: string;
+  status: SessionStatus;
+  message: string;
+}
+
+export interface DnsPrecheckPayload {
+  session_id: string;
+  status: SessionStatus;
+  dns_ready: boolean;
+  missing_records: DnsRecord[];
+  message: string;
 }
 
 export interface EmailValidationPayload {
@@ -112,6 +139,28 @@ export function createCertificateSession(input: CreateSessionInput): Promise<Ses
 
 export function getCertificateSession(sessionId: string): Promise<SessionPayload> {
   return request<SessionPayload>(`/api/v1/certificates/sessions/${sessionId}`);
+}
+
+export function resendEmailVerificationCode(sessionId: string): Promise<SessionActionPayload> {
+  return request<SessionActionPayload>(`/api/v1/certificates/sessions/${sessionId}/verification-code`, {
+    method: 'POST'
+  });
+}
+
+export function verifyEmailCode(
+  sessionId: string,
+  input: VerifyEmailCodeInput
+): Promise<SessionPayload> {
+  return request<SessionPayload>(`/api/v1/certificates/sessions/${sessionId}/verify-email`, {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+export function checkCertificateDns(sessionId: string): Promise<DnsPrecheckPayload> {
+  return request<DnsPrecheckPayload>(`/api/v1/certificates/sessions/${sessionId}/dns-check`, {
+    method: 'POST'
+  });
 }
 
 export function finalizeCertificateSession(sessionId: string): Promise<SessionPayload> {

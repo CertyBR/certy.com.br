@@ -717,6 +717,11 @@ code {
   border-color: var(--status-pending-border);
 }
 
+.status-pill[data-status='awaiting_email_verification'] {
+  background: var(--status-pending-bg);
+  border-color: var(--status-pending-border);
+}
+
 .status-pill[data-status='validating'] {
   background: var(--status-validating-bg);
   border-color: var(--status-validating-border);
