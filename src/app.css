@@ -11,18 +11,18 @@
   --highlight: #f4e9d6;
   --shadow: 0 16px 38px -30px rgba(18, 28, 31, 0.5);
   --cursor-default: url('/cursors/default.svg') 1 1, auto;
-  --cursor-pointer: url('/cursors/handpointing.svg') 12 4, pointer;
-  --cursor-not-allowed: url('/cursors/notallowed.svg') 9 9, not-allowed;
-  --cursor-help: url('/cursors/help.svg') 8 8, help;
-  --cursor-grab: url('/cursors/handopen.svg') 14 14, grab;
-  --cursor-grabbing: url('/cursors/handgrabbing.svg') 14 14, grabbing;
-  --cursor-text: url('/cursors/textcursor.svg') 12 14, text;
-  --cursor-cell: url('/cursors/cell.svg') 8 8, cell;
-  --cursor-context-menu: url('/cursors/contextualmenu.svg') 8 8, context-menu;
-  --cursor-busy: url('/cursors/busy.svg') 8 8, progress;
-  --cursor-wait: url('/cursors/beachball.svg') 16 16, wait;
-  --cursor-zoom-in: url('/cursors/zoomin.svg') 10 10, zoom-in;
-  --cursor-zoom-out: url('/cursors/zoomout.svg') 10 10, zoom-out;
+  --cursor-pointer: url('/cursors/handpointing.svg') 16 6, pointer;
+  --cursor-not-allowed: url('/cursors/notallowed.svg') 11 11, not-allowed;
+  --cursor-help: url('/cursors/help.svg') 10 10, help;
+  --cursor-grab: url('/cursors/handopen.svg') 18 18, grab;
+  --cursor-grabbing: url('/cursors/handgrabbing.svg') 18 18, grabbing;
+  --cursor-text: url('/cursors/textcursor.svg') 16 18, text;
+  --cursor-cell: url('/cursors/cell.svg') 10 10, cell;
+  --cursor-context-menu: url('/cursors/contextualmenu.svg') 10 10, context-menu;
+  --cursor-busy: url('/cursors/busy.svg') 10 10, progress;
+  --cursor-wait: url('/cursors/beachball.svg') 20 20, wait;
+  --cursor-zoom-in: url('/cursors/zoomin.svg') 12 12, zoom-in;
+  --cursor-zoom-out: url('/cursors/zoomout.svg') 12 12, zoom-out;
 }
 
 * {
