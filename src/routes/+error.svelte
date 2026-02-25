@@ -1,11 +1,19 @@
 <script lang="ts">
-  export let status: number;
+  import { page } from '$app/stores';
+
+  export let status: number | undefined;
   export let error: App.Error;
 
-  const isNotFound = status === 404;
-  const title = isNotFound ? 'Not Found' : 'Algo saiu do esperado';
-  const headTitle = isNotFound ? 'Not Found' : `Error ${status}`;
-  const message = isNotFound
+  $: resolvedStatus =
+    typeof status === 'number'
+      ? status
+      : typeof $page.status === 'number' && $page.status > 0
+        ? $page.status
+        : 500;
+  $: isNotFound = resolvedStatus === 404;
+  $: title = isNotFound ? 'Not Found' : 'Algo saiu do esperado';
+  $: headTitle = isNotFound ? 'Not Found' : `Error ${resolvedStatus}`;
+  $: message = isNotFound
     ? 'O endereço que você tentou abrir não existe ou foi movido.'
     : 'Ocorreu um erro inesperado ao carregar esta página.';
 </script>
@@ -27,7 +35,7 @@
 
   <section class="stack" data-reveal>
     <article class="panel error-card">
-      <p class="error-code">{status}</p>
+      <p class="error-code">{resolvedStatus}</p>
       <h1 class="section-title error-title">{title}</h1>
       <p class="error-text">{message}</p>
 

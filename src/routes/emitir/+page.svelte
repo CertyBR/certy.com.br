@@ -272,7 +272,7 @@
       <article class="session-card">
         <div class="session-meta">
           <p><strong>Domínio:</strong> {session.domain}</p>
-          <p><strong>Email:</strong> {session.email}</p>
+          <p><strong>E-mail:</strong> {session.email}</p>
           <p>
             <strong>Status:</strong>
             <span class="status-pill" data-status={session.status}>{statusLabel(session.status)}</span>

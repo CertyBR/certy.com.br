@@ -37,7 +37,7 @@
     },
     {
       title: 'Sem Cadastro',
-      description: 'Não precisa criar conta. Apenas informe seu domínio e email para começar.'
+      description: 'Não precisa criar conta. Apenas informe seu domínio e e-mail para começar.'
     }
   ];
 
@@ -55,7 +55,7 @@
     {
       question: 'Por quanto tempo o certificado é válido?',
       answer:
-        "Certificados Let's Encrypt são válidos por 90 dias. Você receberá um email de lembrete antes do vencimento."
+        "Certificados Let's Encrypt são válidos por 90 dias. Você receberá um e-mail de lembrete antes do vencimento."
     },
     {
       question: 'Posso usar em vários subdomínios?',
@@ -148,14 +148,14 @@
 
   function validateEmailFormat(raw: string): string {
     const value = raw.trim().toLowerCase();
-    if (!value) return 'Informe um email.';
-    if (value.length > 254 || value.includes(' ')) return 'Email inválido.';
+    if (!value) return 'Informe um e-mail.';
+    if (value.length > 254 || value.includes(' ')) return 'E-mail inválido.';
 
     const parts = value.split('@');
-    if (parts.length !== 2) return 'Email inválido.';
+    if (parts.length !== 2) return 'E-mail inválido.';
 
     const [local, domainPart] = parts;
-    if (!local || !domainPart || !domainPart.includes('.')) return 'Email inválido.';
+    if (!local || !domainPart || !domainPart.includes('.')) return 'E-mail inválido.';
 
     return '';
   }
@@ -249,23 +249,15 @@
       <p class="badge">SSL grátis • Let's Encrypt</p>
       <h1>Emita SSL gratuito para seu domínio sem complicação.</h1>
       <p class="lead">
-        Informe domínio e email para iniciar. Depois você acompanha os passos em uma página dedicada
+        Informe domínio e e-mail para iniciar. Depois você acompanha os passos em uma página dedicada
         da sessão.
       </p>
-      <div class="actions">
-        <a class="btn btn-primary" href="/" on:click|preventDefault={() => scrollToSection('emitir')}>
-          Começar emissão
-        </a>
-        <a class="btn btn-ghost" href="/" on:click|preventDefault={() => scrollToSection('faq')}>
-          Ler FAQ
-        </a>
-      </div>
     </div>
 
     <aside class="panel" data-reveal style="animation-delay: 180ms">
       <p class="panel-title">Como funciona</p>
       <ul>
-        <li>Você informa domínio e email para iniciar.</li>
+        <li>Você informa domínio e e-mail para iniciar.</li>
         <li>Você recebe uma sessão exclusiva para acompanhar a validação DNS.</li>
         <li>Após validar, o certificado e a chave ficam disponíveis para cópia.</li>
       </ul>
@@ -292,7 +284,7 @@
       </label>
 
       <label class="field">
-        <span>Email</span>
+        <span>E-mail</span>
         <input
           type="email"
           bind:value={email}
