@@ -10,16 +10,19 @@
   --teal-soft: #d6f0eb;
   --highlight: #f4e9d6;
   --shadow: 0 16px 38px -30px rgba(18, 28, 31, 0.5);
-  --cursor-default: url('/cursors/cursor.svg') 1 1, auto;
-  --cursor-pointer: url('/cursors/pointinghand.svg') 12 4, pointer;
+  --cursor-default: url('/cursors/default.svg') 1 1, auto;
+  --cursor-pointer: url('/cursors/handpointing.svg') 12 4, pointer;
   --cursor-not-allowed: url('/cursors/notallowed.svg') 9 9, not-allowed;
   --cursor-help: url('/cursors/help.svg') 8 8, help;
-  --cursor-grab: url('/cursors/openhand.svg') 14 14, grab;
-  --cursor-grabbing: url('/cursors/closedhand.svg') 14 14, grabbing;
-  --cursor-move: url('/cursors/move.svg') 9 9, move;
+  --cursor-grab: url('/cursors/handopen.svg') 14 14, grab;
+  --cursor-grabbing: url('/cursors/handgrabbing.svg') 14 14, grabbing;
+  --cursor-text: url('/cursors/textcursor.svg') 12 14, text;
+  --cursor-cell: url('/cursors/cell.svg') 8 8, cell;
+  --cursor-context-menu: url('/cursors/contextualmenu.svg') 8 8, context-menu;
+  --cursor-busy: url('/cursors/busy.svg') 8 8, progress;
+  --cursor-wait: url('/cursors/beachball.svg') 16 16, wait;
   --cursor-zoom-in: url('/cursors/zoomin.svg') 10 10, zoom-in;
   --cursor-zoom-out: url('/cursors/zoomout.svg') 10 10, zoom-out;
-  --cursor-resize-nesw: url('/cursors/resizenortheastsouthwest.svg') 9 9, nesw-resize;
 }
 
 * {
@@ -61,7 +64,7 @@ input[type='reset'] {
 
 input:not([type='button']):not([type='submit']):not([type='reset']),
 textarea {
-  cursor: text;
+  cursor: var(--cursor-text);
 }
 
 button:disabled,
@@ -84,7 +87,23 @@ textarea:disabled {
 }
 
 .cursor-move {
-  cursor: var(--cursor-move);
+  cursor: var(--cursor-cell);
+}
+
+.cursor-cell {
+  cursor: var(--cursor-cell);
+}
+
+.cursor-context-menu {
+  cursor: var(--cursor-context-menu);
+}
+
+.cursor-busy {
+  cursor: var(--cursor-busy);
+}
+
+.cursor-wait {
+  cursor: var(--cursor-wait);
 }
 
 .cursor-zoom-in {
@@ -93,10 +112,6 @@ textarea:disabled {
 
 .cursor-zoom-out {
   cursor: var(--cursor-zoom-out);
-}
-
-.cursor-resize-nesw {
-  cursor: var(--cursor-resize-nesw);
 }
 
 .shell {
