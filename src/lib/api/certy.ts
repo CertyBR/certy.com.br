@@ -1,4 +1,3 @@
-import { PUBLIC_API_BASE_URL } from '$env/static/public';
 import { env } from '$env/dynamic/public';
 
 export type SessionStatus =
@@ -74,12 +73,20 @@ interface ErrorPayload {
   error?: string;
 }
 
-const baseUrl = (PUBLIC_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
+const baseUrl = (env.PUBLIC_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
 const emailValidationApiUrl = (
   env.PUBLIC_EMAIL_VALIDATION_API_URL ?? 'https://api.likn.dev/v1/public/email-validation/validate'
 )
   .trim()
   .replace(/\/+$/, '');
+
+function encodePathSegment(segment: string): string {
+  const normalized = segment.trim();
+  if (!normalized) {
+    throw new Error('Identificador de sessão inválido.');
+  }
+  return encodeURIComponent(normalized);
+}
 
 function ensureBaseUrl(): void {
   if (!baseUrl) {
@@ -140,33 +147,41 @@ export function createCertificateSession(input: CreateSessionInput): Promise<Ses
 }
 
 export function getCertificateSession(sessionId: string): Promise<SessionPayload> {
-  return request<SessionPayload>(`/api/v1/certificates/sessions/${sessionId}`);
+  const encodedSessionId = encodePathSegment(sessionId);
+  return request<SessionPayload>(`/api/v1/certificates/sessions/${encodedSessionId}`);
 }
 
 export function resendEmailVerificationCode(sessionId: string): Promise<SessionActionPayload> {
-  return request<SessionActionPayload>(`/api/v1/certificates/sessions/${sessionId}/verification-code`, {
-    method: 'POST'
-  });
+  const encodedSessionId = encodePathSegment(sessionId);
+  return request<SessionActionPayload>(
+    `/api/v1/certificates/sessions/${encodedSessionId}/verification-code`,
+    {
+      method: 'POST'
+    }
+  );
 }
 
 export function verifyEmailCode(
   sessionId: string,
   input: VerifyEmailCodeInput
 ): Promise<SessionPayload> {
-  return request<SessionPayload>(`/api/v1/certificates/sessions/${sessionId}/verify-email`, {
+  const encodedSessionId = encodePathSegment(sessionId);
+  return request<SessionPayload>(`/api/v1/certificates/sessions/${encodedSessionId}/verify-email`, {
     method: 'POST',
     body: JSON.stringify(input)
   });
 }
 
 export function checkCertificateDns(sessionId: string): Promise<DnsPrecheckPayload> {
-  return request<DnsPrecheckPayload>(`/api/v1/certificates/sessions/${sessionId}/dns-check`, {
+  const encodedSessionId = encodePathSegment(sessionId);
+  return request<DnsPrecheckPayload>(`/api/v1/certificates/sessions/${encodedSessionId}/dns-check`, {
     method: 'POST'
   });
 }
 
 export function finalizeCertificateSession(sessionId: string): Promise<SessionPayload> {
-  return request<SessionPayload>(`/api/v1/certificates/sessions/${sessionId}/finalize`, {
+  const encodedSessionId = encodePathSegment(sessionId);
+  return request<SessionPayload>(`/api/v1/certificates/sessions/${encodedSessionId}/finalize`, {
     method: 'POST'
   });
 }
@@ -178,6 +193,9 @@ export async function validateEmailAddress(email: string): Promise<EmailValidati
   }
 
   const url = new URL(emailValidationApiUrl);
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new Error('PUBLIC_EMAIL_VALIDATION_API_URL deve usar http(s).');
+  }
   url.searchParams.set('email', normalizedEmail);
 
   const response = await fetch(url.toString(), {
