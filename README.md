@@ -94,6 +94,24 @@ Depois:
 bun run deploy
 ```
 
+## CI (GitHub Actions)
+
+O pipeline está em:
+
+- `.github/workflows/frontend-ci-cd.yml`
+
+Fluxo:
+
+- CI roda em `push`, `pull_request` e `workflow_dispatch`:
+  - `bun install --frozen-lockfile`
+  - `bun run check`
+  - `bun run build`
+
+Variables recomendadas no GitHub (Repository Variables):
+
+- `PUBLIC_API_BASE_URL`
+- `PUBLIC_EMAIL_VALIDATION_API_URL`
+
 ## Estrutura (resumo)
 
 ```text
