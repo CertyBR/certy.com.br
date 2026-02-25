@@ -121,21 +121,7 @@ static/
 
 Contribuições são bem-vindas.
 
-1. Faça fork do repositório.
-2. Crie uma branch para sua mudança (`feat/...`, `fix/...`, `chore/...`).
-3. Garanta que o projeto continua estável:
-   - `bun run check`
-   - `bun run build`
-4. Abra um Pull Request com:
-   - contexto da mudança
-   - impacto esperado
-   - prints/gifs quando houver alteração visual
-
-Diretrizes importantes:
-
-- Use Bun (não use npm neste projeto).
-- Mantenha TypeScript estrito e código consistente com o estilo atual.
-- Evite incluir dados sensíveis em commits.
+Guia completo em [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Licença
 
