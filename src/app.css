@@ -806,9 +806,21 @@ code {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+.copy-icon-btn:disabled {
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+}
+
 .copy-icon-btn svg {
   width: 1rem;
   height: 1rem;
+}
+
+.icon-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .pem-card {
@@ -831,6 +843,14 @@ code {
 .pem-header h3 {
   margin: 0;
   font-size: 1rem;
+}
+
+.pem-action-row {
+  margin-top: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .pem-card pre {

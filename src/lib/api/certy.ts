@@ -40,7 +40,9 @@ export interface SessionPayload {
   private_key_pem?: string | null;
   email_verified_at?: number | null;
   email_verification_expires_at?: number | null;
+  email_verification_last_sent_at?: number | null;
   email_verification_attempts?: number;
+  email_verification_resend_count?: number;
 }
 
 export interface SessionActionPayload {

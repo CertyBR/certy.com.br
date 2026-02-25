@@ -29,7 +29,9 @@
     private_key_pem: string | null;
     email_verified_at: number | null;
     email_verification_expires_at: number | null;
+    email_verification_last_sent_at: number | null;
     email_verification_attempts: number;
+    email_verification_resend_count: number;
   }
 
   interface RefreshOptions {
@@ -44,6 +46,8 @@
     failed: 'Falhou',
     expired: 'Expirado'
   };
+  const EMAIL_RESEND_LIMIT = 3;
+  const EMAIL_RESEND_INTERVAL_SECONDS = 10 * 60;
 
   let session: SessionView | null = null;
   let sessionId = '';
@@ -54,6 +58,7 @@
   let isCheckingDns = false;
   let isFinalizing = false;
   let emailCode = '';
+  let nowMs = Date.now();
 
   function redirectToHome(): void {
     if (!browser) return;
@@ -76,6 +81,14 @@
     sessionId = sessionFromQuery;
     isLoadingSession = true;
     void refreshSession(sessionFromQuery, { silent: true });
+
+    const timer = window.setInterval(() => {
+      nowMs = Date.now();
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
   });
 
   function statusLabel(status: SessionStatus | string | null | undefined): string {
@@ -108,6 +121,43 @@
     return new Date(unix * 1000).toLocaleString('pt-BR');
   }
 
+  function formatRemainingFromUnix(unix: number | null | undefined): string {
+    if (!unix) return '-';
+    const diffMs = unix * 1000 - nowMs;
+    if (diffMs <= 0) return 'Expirado';
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+  }
+
+  function getResendCooldownRemainingSeconds(currentSession: SessionView | null): number {
+    if (!currentSession?.email_verification_last_sent_at) return 0;
+    const availableAtMs =
+      (currentSession.email_verification_last_sent_at + EMAIL_RESEND_INTERVAL_SECONDS) * 1000;
+    return Math.max(0, Math.ceil((availableAtMs - nowMs) / 1000));
+  }
+
+  function formatRemainingFromSeconds(totalSeconds: number): string {
+    if (totalSeconds <= 0) return '0m 00s';
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+  }
+
+  function getRemainingResendAttempts(currentSession: SessionView | null): number {
+    const used = currentSession?.email_verification_resend_count ?? 0;
+    return Math.max(0, EMAIL_RESEND_LIMIT - used);
+  }
+
+  function canResendCode(currentSession: SessionView | null): boolean {
+    if (!currentSession) return false;
+    if (getRemainingResendAttempts(currentSession) <= 0) return false;
+    if (getResendCooldownRemainingSeconds(currentSession) > 0) return false;
+    return true;
+  }
+
   function buildSessionLink(): string {
     if (!browser || !sessionId) return '';
     return `${window.location.origin}/emitir?session=${sessionId}`;
@@ -115,6 +165,55 @@
 
   function normalizeCodeInput(raw: string): string {
     return raw.replace(/\D/g, '').slice(0, 6);
+  }
+
+  function sanitizeDomainForFilename(domain: string | null | undefined): string {
+    if (!domain) return 'certy';
+    const base = domain
+      .toLowerCase()
+      .replace(/^\*\./, 'wildcard-')
+      .replace(/[^a-z0-9.-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    return base || 'certy';
+  }
+
+  function downloadTextFile(contents: string, filename: string): void {
+    if (!browser || !contents.trim()) return;
+
+    const blob = new Blob([contents], { type: 'application/x-pem-file;charset=utf-8' });
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    anchor.rel = 'noopener';
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  function downloadCertificatePem(): void {
+    if (!session?.certificate_pem) return;
+    const domain = sanitizeDomainForFilename(session.domain);
+    downloadTextFile(session.certificate_pem, `${domain}-cert.pem`);
+    notify('Certificado baixado.', 'success');
+  }
+
+  function downloadPrivateKeyPem(): void {
+    if (!session?.private_key_pem) return;
+    const domain = sanitizeDomainForFilename(session.domain);
+    downloadTextFile(session.private_key_pem, `${domain}-key.pem`);
+    notify('Chave privada baixada.', 'success');
+  }
+
+  function downloadCombinedPem(): void {
+    if (!session?.certificate_pem || !session?.private_key_pem) return;
+    const domain = sanitizeDomainForFilename(session.domain);
+    const combinedPem = `${session.certificate_pem.trim()}\n\n${session.private_key_pem.trim()}\n`;
+    downloadTextFile(combinedPem, `${domain}-cert-key.pem`);
+    notify('Arquivo combinado baixado.', 'success');
   }
 
   function payloadValue<K extends keyof SessionView>(
@@ -159,10 +258,20 @@
         'email_verification_expires_at',
         session?.email_verification_expires_at ?? null
       ),
+      email_verification_last_sent_at: payloadValue(
+        payload,
+        'email_verification_last_sent_at',
+        session?.email_verification_last_sent_at ?? null
+      ),
       email_verification_attempts: payloadValue(
         payload,
         'email_verification_attempts',
         session?.email_verification_attempts ?? 0
+      ),
+      email_verification_resend_count: payloadValue(
+        payload,
+        'email_verification_resend_count',
+        session?.email_verification_resend_count ?? 0
       )
     };
 
@@ -228,6 +337,20 @@
 
   async function handleResendCode(): Promise<void> {
     if (!sessionId) return;
+    if (!canResendCode(session)) {
+      const remainingAttempts = getRemainingResendAttempts(session);
+      const cooldownRemaining = getResendCooldownRemainingSeconds(session);
+      if (remainingAttempts <= 0) {
+        notify('Limite de reenvios atingido. Inicie uma nova sessão.', 'error');
+      } else if (cooldownRemaining > 0) {
+        notify(
+          `Aguarde ${formatRemainingFromSeconds(cooldownRemaining)} para reenviar outro código.`,
+          'info'
+        );
+      }
+      return;
+    }
+
     isResendingCode = true;
 
     try {
@@ -392,7 +515,13 @@
               }}
             />
             <small class="field-hint">
-              Expira em: {formatUnixTimestamp(session.email_verification_expires_at)}
+              Expira em: {formatRemainingFromUnix(session.email_verification_expires_at)}
+            </small>
+            <small class="field-hint">
+              Reenvios restantes: {getRemainingResendAttempts(session)} de {EMAIL_RESEND_LIMIT}
+              {#if getResendCooldownRemainingSeconds(session) > 0}
+                • próximo em {formatRemainingFromSeconds(getResendCooldownRemainingSeconds(session))}
+              {/if}
             </small>
           </label>
 
@@ -410,9 +539,17 @@
               class="btn btn-ghost"
               type="button"
               on:click={handleResendCode}
-              disabled={isResendingCode}
+              disabled={isResendingCode || !canResendCode(session)}
             >
-              {isResendingCode ? 'Reenviando...' : 'Reenviar código'}
+              {#if isResendingCode}
+                Reenviando...
+              {:else if getRemainingResendAttempts(session) <= 0}
+                Limite de reenvio atingido
+              {:else if getResendCooldownRemainingSeconds(session) > 0}
+                Reenviar em {formatRemainingFromSeconds(getResendCooldownRemainingSeconds(session))}
+              {:else}
+                Reenviar código
+              {/if}
             </button>
 
             <button
@@ -559,17 +696,71 @@
             armazenados pelo Certy e não poderão ser exibidos novamente.
           </p>
 
+          <div class="pem-action-row">
+            <button
+              class="copy-icon-btn"
+              type="button"
+              title="Baixar certificado + chave"
+              aria-label="Baixar certificado e chave em um único arquivo"
+              on:click={downloadCombinedPem}
+              disabled={!session.certificate_pem || !session.private_key_pem}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 4v9m0 0l-3.5-3.5M12 13l3.5-3.5M5 16.5v2.5h14v-2.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.6"
+                />
+              </svg>
+            </button>
+            <span class="field-hint">Baixar arquivo combinado (.pem)</span>
+          </div>
+
           {#if session.certificate_pem}
             <article class="pem-card">
               <div class="pem-header">
                 <h3>Certificado (PEM)</h3>
-                <button
-                  class="btn btn-ghost"
-                  type="button"
-                  on:click={() => copyText(session?.certificate_pem, 'Certificado PEM')}
-                >
-                  Copiar certificado
-                </button>
+                <div class="icon-actions">
+                  <button
+                    class="copy-icon-btn"
+                    type="button"
+                    title="Copiar certificado"
+                    aria-label="Copiar certificado PEM"
+                    on:click={() => copyText(session?.certificate_pem, 'Certificado PEM')}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M9 9h10v10H9zM5 5h10v2H7v8H5z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="copy-icon-btn"
+                    type="button"
+                    title="Baixar certificado"
+                    aria-label="Baixar certificado PEM"
+                    on:click={downloadCertificatePem}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M12 4v9m0 0l-3.5-3.5M12 13l3.5-3.5M5 16.5v2.5h14v-2.5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <pre>{session.certificate_pem}</pre>
             </article>
@@ -579,13 +770,44 @@
             <article class="pem-card">
               <div class="pem-header">
                 <h3>Chave Privada (PEM)</h3>
-                <button
-                  class="btn btn-ghost"
-                  type="button"
-                  on:click={() => copyText(session?.private_key_pem, 'Chave privada PEM')}
-                >
-                  Copiar chave privada
-                </button>
+                <div class="icon-actions">
+                  <button
+                    class="copy-icon-btn"
+                    type="button"
+                    title="Copiar chave privada"
+                    aria-label="Copiar chave privada PEM"
+                    on:click={() => copyText(session?.private_key_pem, 'Chave privada PEM')}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M9 9h10v10H9zM5 5h10v2H7v8H5z"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="copy-icon-btn"
+                    type="button"
+                    title="Baixar chave privada"
+                    aria-label="Baixar chave privada PEM"
+                    on:click={downloadPrivateKeyPem}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M12 4v9m0 0l-3.5-3.5M12 13l3.5-3.5M5 16.5v2.5h14v-2.5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <pre>{session.private_key_pem}</pre>
             </article>

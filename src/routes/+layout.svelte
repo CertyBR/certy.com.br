@@ -163,11 +163,34 @@
     menuOpen = false;
   }
 
+  function isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+      return !target.disabled;
+    }
+    if (target.isContentEditable) return true;
+
+    const editableParent = target.closest('input, textarea, [contenteditable="true"]');
+    if (!(editableParent instanceof HTMLElement)) return false;
+    if (editableParent instanceof HTMLInputElement || editableParent instanceof HTMLTextAreaElement) {
+      return !editableParent.disabled;
+    }
+    return editableParent.isContentEditable;
+  }
+
   function blockEvent(event: Event): void {
+    if (isEditableTarget(event.target)) {
+      return;
+    }
     event.preventDefault();
   }
 
   function handleContextMenu(event: MouseEvent): void {
+    if (isEditableTarget(event.target)) {
+      closeMenu();
+      return;
+    }
+
     event.preventDefault();
     positionMenu(event.clientX, event.clientY);
     menuOpen = true;
@@ -188,7 +211,7 @@
 
     if (event.ctrlKey || event.metaKey) {
       const key = event.key.toLowerCase();
-      if (key === 'c' || key === 'x' || key === 'v' || key === 'a') {
+      if ((key === 'c' || key === 'x' || key === 'v' || key === 'a') && !isEditableTarget(event.target)) {
         event.preventDefault();
       }
     }
@@ -388,6 +411,14 @@
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
+  }
+
+  :global(input),
+  :global(textarea),
+  :global([contenteditable='true']) {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
   }
 
   :global(img),
