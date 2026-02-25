@@ -5,3 +5,6 @@ build
 dist
 .DS_Store
 backend
+.env
+.env.*
+!.env.example
