@@ -117,6 +117,14 @@ h1 {
   color: var(--muted);
 }
 
+code {
+  border: 1px solid var(--line);
+  border-radius: 0.42rem;
+  padding: 0.1rem 0.32rem;
+  background: rgba(250, 247, 241, 0.85);
+  font-size: 0.85em;
+}
+
 .actions {
   display: flex;
   gap: 0.8rem;
@@ -186,6 +194,183 @@ h1 {
 
 .panel li + li {
   margin-top: 0.5rem;
+}
+
+.issuer {
+  border: 1px solid var(--line);
+  border-radius: 1.15rem;
+  padding: 1.2rem;
+  background: var(--card);
+}
+
+.issuer-lead {
+  margin: 0.4rem 0 1rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.issue-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.field-error {
+  color: #8a3737;
+  font-size: 0.8rem;
+}
+
+.field input {
+  min-height: 2.8rem;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  padding: 0 0.8rem;
+  font: inherit;
+  color: var(--ink);
+  background: #fffdfa;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: #aaa092;
+  box-shadow: 0 0 0 3px rgba(170, 160, 146, 0.17);
+}
+
+.flash {
+  margin: 0.8rem 0 0;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  padding: 0.7rem 0.8rem;
+  font-size: 0.88rem;
+}
+
+.flash-error {
+  border-color: #e4bcbc;
+  background: #fff2f2;
+  color: #812f2f;
+}
+
+.flash-info {
+  border-color: #beded9;
+  background: #f2fbf9;
+  color: #1b564f;
+}
+
+.session-card {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: #fffdfa;
+}
+
+.session-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem 0.8rem;
+}
+
+.session-meta p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.status-pill {
+  display: inline-flex;
+  margin-left: 0.45rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.78rem;
+}
+
+.status-pill[data-status='pending_dns'] {
+  background: #fff8e9;
+  border-color: #f0ddab;
+}
+
+.status-pill[data-status='validating'] {
+  background: #edf7ff;
+  border-color: #bdd9f0;
+}
+
+.status-pill[data-status='issued'] {
+  background: #ebf9f1;
+  border-color: #b8e2ca;
+}
+
+.status-pill[data-status='failed'],
+.status-pill[data-status='expired'] {
+  background: #fff1f1;
+  border-color: #efc5c5;
+}
+
+.dns-grid {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.dns-card {
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  padding: 0.85rem;
+  background: var(--card);
+}
+
+.dns-card p {
+  margin: 0.2rem 0;
+  font-size: 0.9rem;
+}
+
+.dns-title {
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+.pem-card {
+  margin-top: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  padding: 0.85rem;
+  background: #f9f7f2;
+}
+
+.pem-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.pem-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.pem-card pre {
+  margin: 0;
+  border: 1px solid #d9d1c7;
+  border-radius: 0.7rem;
+  padding: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.82rem;
+  max-height: 290px;
+  overflow: auto;
+  background: #fff;
 }
 
 .grid {

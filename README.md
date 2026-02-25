@@ -1,6 +1,6 @@
-# Certy Frontend (SvelteKit + Cloudflare Workers)
+# Certy Frontend (SvelteKit + TypeScript + Cloudflare Workers)
 
-Landing page frontend da Certy (`certy.com.br`) com estilo minimalista, sem backend acoplado.
+Frontend da Certy (`certy.com.br`) com fluxo real de emissão conectado ao backend via proxy.
 
 ## Requisitos
 
@@ -24,6 +24,8 @@ bun run deploy
 
 ## Integração com backend Rust
 
-1. Exponha a API no seu VPS (HTTPS).
-2. Defina variáveis `PUBLIC_*` para URL pública do backend.
-3. Faça chamadas `fetch` no frontend para os endpoints da API.
+1. Defina `PUBLIC_API_BASE_URL` para a URL do proxy Cloudflare (ex.: `https://proxy.certy.com.br`).
+2. O frontend cria sessão, exibe registros DNS e finaliza emissão via:
+   - `POST /api/v1/certificates/sessions`
+   - `GET /api/v1/certificates/sessions/{session_id}`
+   - `POST /api/v1/certificates/sessions/{session_id}/finalize`
