@@ -140,6 +140,18 @@
     return 'Erro inesperado.';
   }
 
+  function isSessionNotFoundError(error: unknown): boolean {
+    const message = asStringError(error).toLowerCase();
+    return (
+      message.includes('sessão não encontrada') ||
+      message.includes('sessao não encontrada') ||
+      message.includes('sessao nao encontrada') ||
+      message.includes('session not found') ||
+      message.includes('erro 404') ||
+      message.includes('error 404')
+    );
+  }
+
   function formatUnixTimestamp(unix: number | null | undefined): string {
     if (!unix) return '-';
     return new Date(unix * 1000).toLocaleString('pt-BR');
@@ -294,6 +306,11 @@
         formInfo = 'Sessão atualizada com sucesso.';
       }
     } catch (error) {
+      if (isSessionNotFoundError(error)) {
+        startNewSession();
+        return;
+      }
+
       if (!silent) {
         formError = asStringError(error);
       }
@@ -322,6 +339,11 @@
         await refreshSession(sessionId, { silent: true });
       }
     } catch (error) {
+      if (isSessionNotFoundError(error)) {
+        startNewSession();
+        return;
+      }
+
       formError = asStringError(error);
     } finally {
       isFinalizing = false;
