@@ -1,15 +1,9 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import {
-    createCertificateSession,
-    finalizeCertificateSession,
-    type DnsRecord,
-    getCertificateSession,
-    hasApiBaseUrl,
-    type SessionPayload,
-    type SessionStatus
-  } from '$lib/api/certy';
+  import { createCertificateSession, hasApiBaseUrl } from '$lib/api/certy';
+  import { notify } from '$lib/toast';
 
   interface Benefit {
     title: string;
@@ -21,27 +15,11 @@
     answer: string;
   }
 
-  interface SessionView {
-    session_id: string;
-    status: SessionStatus;
-    domain: string;
-    email: string;
-    dns_records: DnsRecord[];
-    created_at: number | null;
-    updated_at: number | null;
-    expires_at: number | null;
-    last_error: string | null;
-    certificate_pem: string | null;
-    private_key_pem: string | null;
-  }
-
-  interface RefreshOptions {
-    silent?: boolean;
-  }
-
   interface CloseHashModalOptions {
     clearHash?: boolean;
   }
+
+  type HashModal = 'faq' | 'beneficios';
 
   const benefits: Benefit[] = [
     {
@@ -96,95 +74,48 @@
     }
   ];
 
-  const statusLabels: Record<SessionStatus, string> = {
-    pending_dns: 'Aguardando DNS',
-    validating: 'Validando',
-    issued: 'Emitido',
-    failed: 'Falhou',
-    expired: 'Expirado'
-  };
-
   let domain = '';
   let email = '';
   let domainError = '';
   let emailError = '';
-  let session: SessionView | null = null;
-  let sessionId = '';
-  let formError = '';
-  let formInfo = '';
-  let copyInfo = '';
   let isCreating = false;
-  let isRefreshing = false;
-  let isFinalizing = false;
-  let hashModal: 'faq' | null = null;
+  let hashModal: HashModal | null = null;
 
   onMount(() => {
-    const syncHashModal = (): void => {
-      const hash = window.location.hash.trim().toLowerCase();
-      hashModal = hash === '#faq' ? 'faq' : null;
-    };
-
     const handleModalKeydown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape' && hashModal) {
         closeHashModal();
       }
     };
 
-    window.addEventListener('hashchange', syncHashModal);
     window.addEventListener('keydown', handleModalKeydown);
 
-    if (!hasApiBaseUrl()) {
-      formError = 'Serviço temporariamente indisponível. Tente novamente em instantes.';
-    } else {
-      const query = new URLSearchParams(window.location.search);
-      const sessionFromQuery = query.get('session');
-      if (sessionFromQuery) {
-        sessionId = sessionFromQuery;
-        void refreshSession(sessionFromQuery, { silent: true });
-      }
+    const query = new URLSearchParams(window.location.search);
+    const sessionFromQuery = query.get('session')?.trim();
+    if (sessionFromQuery) {
+      void goto(`/emitir?session=${encodeURIComponent(sessionFromQuery)}`, { replaceState: true });
     }
 
-    syncHashModal();
+    if (!hasApiBaseUrl()) {
+      notify('Serviço temporariamente indisponível. Tente novamente em instantes.', 'error');
+    }
+
+    const initialHash = window.location.hash.trim().toLowerCase();
+    if (initialHash === '#faq' || initialHash === '#beneficios') {
+      hashModal = initialHash === '#faq' ? 'faq' : 'beneficios';
+      const url = new URL(window.location.href);
+      url.hash = '';
+      window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+    }
 
     return () => {
-      window.removeEventListener('hashchange', syncHashModal);
       window.removeEventListener('keydown', handleModalKeydown);
     };
   });
 
-  function statusLabel(status: SessionStatus | string | null | undefined): string {
-    if (!status) return 'desconhecido';
-    if (status in statusLabels) {
-      return statusLabels[status as SessionStatus];
-    }
-    return status;
-  }
-
   function asStringError(error: unknown): string {
     if (error instanceof Error) return error.message;
     return 'Erro inesperado.';
-  }
-
-  function isSessionNotFoundError(error: unknown): boolean {
-    const message = asStringError(error).toLowerCase();
-    return (
-      message.includes('sessão não encontrada') ||
-      message.includes('sessao não encontrada') ||
-      message.includes('sessao nao encontrada') ||
-      message.includes('session not found') ||
-      message.includes('erro 404') ||
-      message.includes('error 404')
-    );
-  }
-
-  function formatUnixTimestamp(unix: number | null | undefined): string {
-    if (!unix) return '-';
-    return new Date(unix * 1000).toLocaleString('pt-BR');
-  }
-
-  function buildSessionLink(): string {
-    if (!browser || !sessionId) return '';
-    return `${window.location.origin}/?session=${sessionId}`;
   }
 
   function normalizeDomainInput(raw: string): string {
@@ -235,173 +166,44 @@
     return !domainError && !emailError;
   }
 
-  function payloadValue<K extends keyof SessionView>(
-    payload: SessionPayload,
-    key: K,
-    fallback: SessionView[K]
-  ): SessionView[K] {
-    if (key in payload) {
-      return payload[key as keyof SessionPayload] as SessionView[K];
-    }
-    return fallback;
-  }
-
-  function mergeSession(payload: SessionPayload | null | undefined): void {
-    if (!payload) return;
-
-    session = {
-      session_id: payloadValue(payload, 'session_id', session?.session_id ?? sessionId ?? ''),
-      status: payloadValue(payload, 'status', session?.status ?? 'pending_dns'),
-      domain: payloadValue(payload, 'domain', session?.domain ?? domain),
-      email: payloadValue(payload, 'email', session?.email ?? email),
-      dns_records: payloadValue(payload, 'dns_records', session?.dns_records ?? []),
-      created_at: payloadValue(payload, 'created_at', session?.created_at ?? null),
-      updated_at: payloadValue(payload, 'updated_at', session?.updated_at ?? null),
-      expires_at: payloadValue(payload, 'expires_at', session?.expires_at ?? null),
-      last_error: payloadValue(payload, 'last_error', session?.last_error ?? null),
-      certificate_pem: payloadValue(payload, 'certificate_pem', session?.certificate_pem ?? null),
-      private_key_pem: payloadValue(payload, 'private_key_pem', session?.private_key_pem ?? null)
-    };
-
-    sessionId = session.session_id || sessionId;
-    if (session.domain) domain = session.domain;
-    if (session.email) email = session.email;
-
-    if (browser && sessionId) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('session', sessionId);
-      window.history.replaceState(null, '', url.toString());
-    }
-  }
-
   async function handleCreateSession(): Promise<void> {
     if (!hasApiBaseUrl()) {
-      formError = 'Serviço temporariamente indisponível. Tente novamente em instantes.';
+      notify('Serviço temporariamente indisponível. Tente novamente em instantes.', 'error');
       return;
     }
 
     domain = normalizeDomainInput(domain);
     email = email.trim().toLowerCase();
+
     if (!validateClientForm()) {
-      formError = 'Revise os campos e tente novamente.';
+      notify('Revise os campos e tente novamente.', 'error');
       return;
     }
 
-    formError = '';
-    formInfo = '';
-    copyInfo = '';
     isCreating = true;
 
     try {
       const payload = await createCertificateSession({ domain, email });
-      mergeSession(payload);
-      formInfo =
-        payload?.message ??
-        'Sessão criada com sucesso. Adicione os registros TXT e depois finalize a emissão.';
+      const createdSessionId = payload?.session_id?.trim();
+
+      if (!createdSessionId) {
+        throw new Error('Sessão inválida retornada pelo servidor.');
+      }
+
+      notify(payload?.message ?? 'Sessão criada com sucesso.', 'success');
+      await goto(`/emitir?session=${encodeURIComponent(createdSessionId)}`);
     } catch (error) {
-      formError = asStringError(error);
+      notify(asStringError(error), 'error');
     } finally {
       isCreating = false;
     }
   }
 
-  async function refreshSession(
-    targetSessionId: string = sessionId,
-    options: RefreshOptions = {}
-  ): Promise<void> {
-    const { silent = false } = options;
-
-    if (!targetSessionId) {
-      if (!silent) {
-        formError = 'Crie uma sessão antes de atualizar o status.';
-      }
-      return;
-    }
-
-    if (!silent) {
-      formError = '';
-      copyInfo = '';
-    }
-    isRefreshing = true;
-
-    try {
-      const payload = await getCertificateSession(targetSessionId);
-      mergeSession(payload);
-      if (!silent) {
-        formInfo = 'Sessão atualizada com sucesso.';
-      }
-    } catch (error) {
-      if (isSessionNotFoundError(error)) {
-        startNewSession();
-        return;
-      }
-
-      if (!silent) {
-        formError = asStringError(error);
-      }
-    } finally {
-      isRefreshing = false;
-    }
-  }
-
-  async function handleFinalizeSession(): Promise<void> {
-    if (!sessionId) {
-      formError = 'Crie ou carregue uma sessão antes de finalizar.';
-      return;
-    }
-
-    formError = '';
-    formInfo = '';
-    copyInfo = '';
-    isFinalizing = true;
-
-    try {
-      const payload = await finalizeCertificateSession(sessionId);
-      mergeSession(payload);
-      formInfo = payload?.message ?? 'Finalização solicitada.';
-
-      if (payload?.status !== 'issued') {
-        await refreshSession(sessionId, { silent: true });
-      }
-    } catch (error) {
-      if (isSessionNotFoundError(error)) {
-        startNewSession();
-        return;
-      }
-
-      formError = asStringError(error);
-    } finally {
-      isFinalizing = false;
-    }
-  }
-
-  async function copyText(value: string | null | undefined, label: string): Promise<void> {
-    if (!browser || !value) return;
-
-    try {
-      await navigator.clipboard.writeText(value);
-      copyInfo = `${label} copiado com sucesso.`;
-    } catch {
-      copyInfo = `Não foi possível copiar ${label.toLowerCase()}.`;
-    }
-  }
-
-  function startNewSession(): void {
-    session = null;
-    sessionId = '';
-    domain = '';
-    email = '';
-    domainError = '';
-    emailError = '';
-    formError = '';
-    formInfo = '';
-    copyInfo = '';
-
-    if (browser) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('session');
-      window.history.replaceState(null, '', url.toString());
-    }
+  function scrollToSection(sectionId: string): void {
+    if (!browser) return;
+    const target = document.getElementById(sectionId);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function closeHashModal(options: CloseHashModalOptions = {}): void {
@@ -434,10 +236,12 @@
   <header class="site-header" data-reveal>
     <a class="brand" href="/">certy</a>
     <nav class="links">
-      <a href="#emitir">Emitir</a>
-      <a href="#beneficios">Benefícios</a>
-      <a href="#faq">FAQ</a>
-      <a href="#zerocert">ZeroCert</a>
+      <a href="/" on:click|preventDefault={() => scrollToSection('emitir')}>Emitir</a>
+      <a href="/" on:click|preventDefault={() => scrollToSection('beneficios')}>
+        Benefícios
+      </a>
+      <a href="/" on:click|preventDefault={() => scrollToSection('faq')}>FAQ</a>
+      <a href="/" on:click|preventDefault={() => scrollToSection('zerocert')}>ZeroCert</a>
     </nav>
   </header>
 
@@ -446,11 +250,16 @@
       <p class="badge">SSL grátis • Let's Encrypt</p>
       <h1>Emita SSL gratuito para seu domínio sem complicação.</h1>
       <p class="lead">
-        Crie sua solicitação, adicione o registro DNS indicado e conclua a emissão com segurança.
+        Informe domínio e email para iniciar. Depois você acompanha os passos em uma página dedicada
+        da sessão.
       </p>
       <div class="actions">
-        <a class="btn btn-primary" href="#emitir">Começar emissão</a>
-        <a class="btn btn-ghost" href="#faq">Ler FAQ</a>
+        <a class="btn btn-primary" href="/" on:click|preventDefault={() => scrollToSection('emitir')}>
+          Começar emissão
+        </a>
+        <a class="btn btn-ghost" href="/" on:click|preventDefault={() => scrollToSection('faq')}>
+          Ler FAQ
+        </a>
       </div>
     </div>
 
@@ -458,7 +267,7 @@
       <p class="panel-title">Como funciona</p>
       <ul>
         <li>Você informa domínio e email para iniciar.</li>
-        <li>Nós mostramos o registro DNS necessário para validação.</li>
+        <li>Você recebe uma sessão exclusiva para acompanhar a validação DNS.</li>
         <li>Após validar, o certificado e a chave ficam disponíveis para cópia.</li>
       </ul>
     </aside>
@@ -467,186 +276,43 @@
   <section id="emitir" class="stack issuer" data-reveal style="animation-delay: 140ms">
     <h2 class="section-title">Emitir Certificado</h2>
 
-    {#if !sessionId}
-      <form class="issue-form" on:submit|preventDefault={handleCreateSession}>
-        <label class="field">
-          <span>Domínio</span>
-          <input
-            type="text"
-            bind:value={domain}
-            on:blur={() => (domainError = validateDomainFormat(domain))}
-            placeholder="example.com ou *.example.com"
-            autocomplete="off"
-            required
-          />
-          {#if domainError}
-            <small class="field-error">{domainError}</small>
-          {/if}
-        </label>
-
-        <label class="field">
-          <span>Email</span>
-          <input
-            type="email"
-            bind:value={email}
-            on:blur={() => (emailError = validateEmailFormat(email))}
-            placeholder="ops@example.com"
-            autocomplete="email"
-            required
-          />
-          {#if emailError}
-            <small class="field-error">{emailError}</small>
-          {/if}
-        </label>
-
-        <div class="actions">
-          <button class="btn btn-primary" type="submit" disabled={isCreating || !hasApiBaseUrl()}>
-            {isCreating ? 'Criando sessão...' : 'Criar sessão'}
-          </button>
-        </div>
-      </form>
-    {/if}
-
-    {#if formError}
-      <p class="flash flash-error">{formError}</p>
-    {/if}
-    {#if formInfo}
-      <p class="flash flash-info">{formInfo}</p>
-    {/if}
-    {#if copyInfo}
-      <p class="flash flash-info">{copyInfo}</p>
-    {/if}
-    {#if sessionId && !session && isRefreshing}
-      <p class="flash flash-info">Carregando sessão...</p>
-    {/if}
-
-    {#if session}
-      <article class="session-card">
-        <div class="session-meta">
-          <p><strong>Domínio:</strong> {session.domain}</p>
-          <p><strong>Email:</strong> {session.email}</p>
-          <p>
-            <strong>Status:</strong>
-            <span class="status-pill" data-status={session.status}>{statusLabel(session.status)}</span>
-          </p>
-          <p><strong>Criado em:</strong> {formatUnixTimestamp(session.created_at)}</p>
-          <p><strong>Expira em:</strong> {formatUnixTimestamp(session.expires_at)}</p>
-        </div>
-
-        {#if session.last_error}
-          <p class="flash flash-error">{session.last_error}</p>
+    <form class="issue-form" on:submit|preventDefault={handleCreateSession}>
+      <label class="field">
+        <span>Domínio</span>
+        <input
+          type="text"
+          bind:value={domain}
+          on:blur={() => (domainError = validateDomainFormat(domain))}
+          placeholder="example.com ou *.example.com"
+          autocomplete="off"
+          required
+        />
+        {#if domainError}
+          <small class="field-error">{domainError}</small>
         {/if}
+      </label>
 
-        <div class="dns-grid">
-          {#each session.dns_records ?? [] as record, index}
-            <article class="dns-card">
-              <p class="dns-title">Registro DNS #{index + 1}</p>
-              <p><strong>Tipo:</strong> {record.type ?? record.record_type ?? 'TXT'}</p>
-              <p class="dns-row">
-                <strong>Nome:</strong>
-                <span class="dns-inline-value">
-                  <code>{record.name}</code>
-                  <button
-                    class="copy-icon-btn"
-                    type="button"
-                    title="Copiar nome"
-                    aria-label="Copiar nome DNS"
-                    on:click={() => copyText(record.name, 'Nome DNS')}
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M9 9h10v10H9zM5 5h10v2H7v8H5z"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.6"
-                      />
-                    </svg>
-                  </button>
-                </span>
-              </p>
-              <p class="dns-row">
-                <strong>Valor:</strong>
-                <span class="dns-inline-value">
-                  <code>{record.value}</code>
-                  <button
-                    class="copy-icon-btn"
-                    type="button"
-                    title="Copiar valor"
-                    aria-label="Copiar valor DNS"
-                    on:click={() => copyText(record.value, 'Valor DNS')}
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        d="M9 9h10v10H9zM5 5h10v2H7v8H5z"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.6"
-                      />
-                    </svg>
-                  </button>
-                </span>
-              </p>
-            </article>
-          {/each}
-        </div>
-
-        {#if session.certificate_pem}
-          <article class="pem-card">
-            <div class="pem-header">
-              <h3>Certificado (PEM)</h3>
-              <button
-                class="btn btn-ghost"
-                type="button"
-                on:click={() => copyText(session?.certificate_pem, 'Certificado PEM')}
-              >
-                Copiar certificado
-              </button>
-            </div>
-            <pre>{session.certificate_pem}</pre>
-          </article>
+      <label class="field">
+        <span>Email</span>
+        <input
+          type="email"
+          bind:value={email}
+          on:blur={() => (emailError = validateEmailFormat(email))}
+          placeholder="ops@example.com"
+          autocomplete="email"
+          required
+        />
+        {#if emailError}
+          <small class="field-error">{emailError}</small>
         {/if}
-
-        {#if session.private_key_pem}
-          <article class="pem-card">
-            <div class="pem-header">
-              <h3>Chave Privada (PEM)</h3>
-              <button
-                class="btn btn-ghost"
-                type="button"
-                on:click={() => copyText(session?.private_key_pem, 'Chave privada PEM')}
-              >
-                Copiar chave privada
-              </button>
-            </div>
-            <pre>{session.private_key_pem}</pre>
-          </article>
-        {/if}
-      </article>
+      </label>
 
       <div class="actions">
-          <button
-            class="btn btn-primary"
-            type="button"
-            on:click={handleFinalizeSession}
-            disabled={isFinalizing || !sessionId || session.status === 'issued'}
-          >
-            {isFinalizing ? 'Finalizando...' : 'Validar DNS e emitir'}
-          </button>
-
-          <button
-            class="btn btn-ghost"
-            type="button"
-            on:click={() => copyText(buildSessionLink(), 'Link da sessão')}
-            disabled={!sessionId}
-          >
-            Copiar link da sessão
-          </button>
-        </div>
-    {/if}
+        <button class="btn btn-primary" type="submit" disabled={isCreating || !hasApiBaseUrl()}>
+          {isCreating ? 'Criando sessão...' : 'Criar sessão'}
+        </button>
+      </div>
+    </form>
   </section>
 
   <section id="beneficios" class="stack">
@@ -716,14 +382,58 @@
         </div>
 
         <div class="actions">
-          <a
+          <button
             class="btn btn-primary"
-            href="#emitir"
-            on:click={() => closeHashModal({ clearHash: false })}
+            type="button"
+            on:click={() => {
+              closeHashModal({ clearHash: false });
+              scrollToSection('emitir');
+            }}
           >
             Ir para emissão
-          </a>
+          </button>
           <button class="btn btn-ghost" type="button" on:click={() => closeHashModal()}>
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if hashModal === 'beneficios'}
+  <div class="macos-modal-backdrop" role="presentation" on:click={handleHashModalBackdropClick}>
+    <div
+      class="macos-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="beneficios-modal-title"
+    >
+      <header class="macos-modal-header">
+        <button
+          class="macos-dot macos-dot-close"
+          type="button"
+          aria-label="Fechar"
+          on:click={() => closeHashModal()}
+        ></button>
+        <span class="macos-modal-title">Certy</span>
+      </header>
+
+      <div class="macos-modal-content">
+        <h2 id="beneficios-modal-title">Benefícios</h2>
+        <p>Resumo direto dos principais pontos da plataforma.</p>
+
+        <div class="macos-modal-benefits">
+          {#each benefits as benefit}
+            <article class="card">
+              <h3>{benefit.title}</h3>
+              <p>{benefit.description}</p>
+            </article>
+          {/each}
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button" on:click={() => closeHashModal()}>
             Fechar
           </button>
         </div>

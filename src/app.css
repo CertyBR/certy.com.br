@@ -722,6 +722,13 @@ code {
   margin-bottom: 0.8rem;
 }
 
+.macos-modal-benefits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
 .macos-modal-faq-item {
   border: 1px solid var(--line);
   border-radius: 0.85rem;

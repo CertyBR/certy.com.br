@@ -2,23 +2,44 @@
   import { onMount } from 'svelte';
   import '../app.css';
 
+  type ToastTone = 'info' | 'success' | 'error';
+
+  interface ToastItem {
+    id: number;
+    message: string;
+    tone: ToastTone;
+  }
+
+  interface ToastDetail {
+    message?: string;
+    tone?: ToastTone;
+  }
+
   const MENU_WIDTH = 228;
   const MENU_HEIGHT = 104;
   const MENU_MARGIN = 10;
+  const TOAST_DURATION_MS = 2400;
 
   let menuOpen = false;
   let menuX = 0;
   let menuY = 0;
-  let toastMessage = '';
-  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  let nextToastId = 1;
+  let toasts: ToastItem[] = [];
+  const toastTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
-  function showToast(message: string): void {
-    toastMessage = message;
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      toastMessage = '';
-      toastTimer = null;
-    }, 1700);
+  function pushToast(message: string, tone: ToastTone = 'info'): void {
+    const trimmed = message.trim();
+    if (!trimmed) return;
+
+    const id = nextToastId++;
+    toasts = [...toasts, { id, message: trimmed, tone }];
+
+    const timer = setTimeout(() => {
+      toasts = toasts.filter((toast) => toast.id !== id);
+      toastTimers.delete(id);
+    }, TOAST_DURATION_MS);
+
+    toastTimers.set(id, timer);
   }
 
   function positionMenu(clientX: number, clientY: number): void {
@@ -67,9 +88,9 @@
     closeMenu();
     try {
       await navigator.clipboard.writeText(window.location.href);
-      showToast('URL atual copiada.');
+      pushToast('URL atual copiada.', 'success');
     } catch {
-      showToast('Não foi possível copiar a URL.');
+      pushToast('Não foi possível copiar a URL.', 'error');
     }
   }
 
@@ -79,6 +100,13 @@
   }
 
   onMount(() => {
+    const handleToastEvent = (event: Event): void => {
+      const customEvent = event as CustomEvent<ToastDetail>;
+      const message = customEvent.detail?.message ?? '';
+      const tone = customEvent.detail?.tone ?? 'info';
+      pushToast(message, tone);
+    };
+
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('copy', blockEvent);
     document.addEventListener('cut', blockEvent);
@@ -88,6 +116,7 @@
     document.addEventListener('drop', blockEvent);
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleKeydown);
+    window.addEventListener('certy:toast', handleToastEvent);
 
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
@@ -99,9 +128,11 @@
       document.removeEventListener('drop', blockEvent);
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleKeydown);
-      if (toastTimer) {
-        clearTimeout(toastTimer);
+      window.removeEventListener('certy:toast', handleToastEvent);
+      for (const timer of toastTimers.values()) {
+        clearTimeout(timer);
       }
+      toastTimers.clear();
     };
   });
 </script>
@@ -127,8 +158,12 @@
   </div>
 {/if}
 
-{#if toastMessage}
-  <div class="macos-toast" role="status" aria-live="polite">{toastMessage}</div>
+{#if toasts.length > 0}
+  <div class="macos-toast-stack" aria-live="polite" role="status">
+    {#each toasts as toast (toast.id)}
+      <div class={`macos-toast macos-toast-${toast.tone}`}>{toast.message}</div>
+    {/each}
+  </div>
 {/if}
 
 <style>
@@ -182,12 +217,18 @@
     color: #ffffff;
   }
 
-  .macos-toast {
+  .macos-toast-stack {
     position: fixed;
     left: 50%;
     bottom: 1.1rem;
     transform: translateX(-50%);
     z-index: 9999;
+    display: grid;
+    gap: 0.5rem;
+    justify-items: center;
+  }
+
+  .macos-toast {
     border-radius: 999px;
     border: 1px solid rgba(45, 43, 39, 0.18);
     background: rgba(246, 244, 240, 0.95);
@@ -196,5 +237,19 @@
     font-size: 0.82rem;
     color: #1f1d1a;
     box-shadow: 0 12px 24px -18px rgba(18, 18, 18, 0.45);
+    max-width: min(90vw, 740px);
+    text-align: center;
+  }
+
+  .macos-toast-success {
+    border-color: #abd7be;
+    background: rgba(236, 250, 243, 0.95);
+    color: #1c5c34;
+  }
+
+  .macos-toast-error {
+    border-color: #e2b5b5;
+    background: rgba(253, 241, 241, 0.95);
+    color: #7f2a2a;
   }
 </style>
