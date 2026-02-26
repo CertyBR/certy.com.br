@@ -517,12 +517,6 @@
             <small class="field-hint">
               Expira em: {formatRemainingFromUnix(session.email_verification_expires_at)}
             </small>
-            <small class="field-hint">
-              Reenvios restantes: {getRemainingResendAttempts(session)} de {EMAIL_RESEND_LIMIT}
-              {#if getResendCooldownRemainingSeconds(session) > 0}
-                • próximo em {formatRemainingFromSeconds(getResendCooldownRemainingSeconds(session))}
-              {/if}
-            </small>
           </label>
 
           <div class="actions">

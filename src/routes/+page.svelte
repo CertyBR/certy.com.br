@@ -456,7 +456,7 @@
     <span class="footer-links">
       <a href="/termos">Termos de Uso e Privacidade</a>
       <span>•</span>
-      <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
+      <a href="https://github.com/CertyBR" target="_blank" rel="noreferrer">GitHub</a>
       <span>•</span>
       <a href="https://letsencrypt.org/pt-br/" target="_blank" rel="noreferrer">Let's Encrypt</a>
     </span>
