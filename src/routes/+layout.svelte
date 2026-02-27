@@ -471,6 +471,7 @@
     display: grid;
     gap: 0.5rem;
     justify-items: center;
+    width: min(92vw, 740px);
   }
 
   .macos-toast {
@@ -482,8 +483,10 @@
     font-size: 0.82rem;
     color: var(--toast-text);
     box-shadow: 0 12px 24px -18px rgba(6, 12, 8, 0.58);
-    max-width: min(90vw, 740px);
+    width: max-content;
+    max-width: 100%;
     text-align: center;
+    line-height: 1.3;
   }
 
   .macos-toast-success {
@@ -552,6 +555,23 @@
   }
 
   @media (max-width: 760px) {
+    .macos-toast-stack {
+      left: 0.72rem;
+      right: 0.72rem;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 3.6rem);
+      transform: none;
+      width: auto;
+      justify-items: stretch;
+    }
+
+    .macos-toast {
+      width: 100%;
+      border-radius: 0.82rem;
+      padding: 0.58rem 0.72rem;
+      font-size: 0.78rem;
+      text-align: left;
+    }
+
     .theme-toggle {
       right: 0.72rem;
       bottom: 0.72rem;

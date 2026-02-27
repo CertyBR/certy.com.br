@@ -1231,7 +1231,7 @@ code {
 @media (max-width: 760px) {
   .shell {
     width: min(1080px, 95vw);
-    padding: 1rem 0 2.4rem;
+    padding: 1rem 0 calc(4.9rem + env(safe-area-inset-bottom, 0px));
   }
 
   .site-header {
@@ -1312,6 +1312,38 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .session-meta p {
+    line-height: 1.45;
+  }
+
+  .session-meta .status-pill {
+    margin-left: 0;
+    margin-top: 0.2rem;
+  }
+
+  .issuer-lead {
+    line-height: 1.45;
+  }
+
+  .copy-icon-btn {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+
+  .pem-action-row {
+    width: 100%;
+    display: flex;
+  }
+
+  .pem-action-row .field-hint {
+    min-width: 0;
+  }
+
+  .pem-card pre {
+    max-height: 240px;
+    font-size: 0.78rem;
+  }
+
   .session-page-title {
     white-space: normal;
   }
@@ -1382,7 +1414,7 @@ code {
 @media (max-width: 480px) {
   .shell {
     width: 96vw;
-    padding: 0.85rem 0 2rem;
+    padding: 0.85rem 0 calc(4.7rem + env(safe-area-inset-bottom, 0px));
   }
 
   h1 {
@@ -1432,6 +1464,10 @@ code {
   .status-pill {
     margin-left: 0.32rem;
     font-size: 0.74rem;
+  }
+
+  .session-meta .status-pill {
+    margin-left: 0;
   }
 
   .macos-context-menu {
