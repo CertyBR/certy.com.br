@@ -118,6 +118,15 @@
   let isCreating = false;
   let isValidatingEmail = false;
   let hashModal: HashModal | null = null;
+  let mobileNavOpen = false;
+
+  function toggleMobileNav(): void {
+    mobileNavOpen = !mobileNavOpen;
+  }
+
+  function closeMobileNav(): void {
+    mobileNavOpen = false;
+  }
 
   onMount(() => {
     const handleModalKeydown = (event: KeyboardEvent): void => {
@@ -341,13 +350,44 @@
 <main class="shell">
   <header class="site-header" data-reveal>
     <a class="brand" href="/">certy</a>
-    <nav class="links">
-      <a href="/" on:click|preventDefault={() => scrollToSection('emitir')}>Emitir</a>
-      <a href="/" on:click|preventDefault={() => scrollToSection('beneficios')}>
+    <button
+      type="button"
+      class="nav-toggle"
+      aria-label={mobileNavOpen ? 'Fechar menu' : 'Abrir menu'}
+      aria-expanded={mobileNavOpen}
+      on:click={toggleMobileNav}
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <nav class="links" class:links-open={mobileNavOpen}>
+      <a
+        href="/"
+        on:click|preventDefault={() => {
+          closeMobileNav();
+          scrollToSection('emitir');
+        }}>Emitir</a
+      >
+      <a
+        href="/"
+        on:click|preventDefault={() => {
+          closeMobileNav();
+          scrollToSection('beneficios');
+        }}
+      >
         Benefícios
       </a>
-      <a href="/" on:click|preventDefault={() => scrollToSection('faq')}>FAQ</a>
-      <a href="https://zerocert.com.br" target="_blank" rel="noreferrer">ZeroCert</a>
+      <a
+        href="/"
+        on:click|preventDefault={() => {
+          closeMobileNav();
+          scrollToSection('faq');
+        }}>FAQ</a
+      >
+      <a href="https://zerocert.com.br" target="_blank" rel="noreferrer" on:click={closeMobileNav}
+        >ZeroCert</a
+      >
     </nav>
   </header>
 

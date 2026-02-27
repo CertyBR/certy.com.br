@@ -375,7 +375,7 @@
       </svg>
     {/if}
   </span>
-  <span>{themeMode === 'dark' ? 'Tema claro' : 'Tema escuro'}</span>
+  <span class="theme-toggle-label">{themeMode === 'dark' ? 'Tema claro' : 'Tema escuro'}</span>
 </button>
 
 {#if menuOpen}
@@ -555,9 +555,17 @@
     .theme-toggle {
       right: 0.72rem;
       bottom: 0.72rem;
-      min-height: 2.25rem;
-      font-size: 0.78rem;
-      padding: 0 0.72rem;
+      width: 2.4rem;
+      height: 2.4rem;
+      min-height: 2.4rem;
+      border-radius: 50%;
+      padding: 0;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .theme-toggle-label {
+      display: none;
     }
   }
 </style>

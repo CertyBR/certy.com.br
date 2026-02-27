@@ -59,6 +59,15 @@
   let isFinalizing = false;
   let emailCode = '';
   let nowMs = Date.now();
+  let mobileNavOpen = false;
+
+  function toggleMobileNav(): void {
+    mobileNavOpen = !mobileNavOpen;
+  }
+
+  function closeMobileNav(): void {
+    mobileNavOpen = false;
+  }
 
   function redirectToHome(): void {
     if (!browser) return;
@@ -458,10 +467,21 @@
 <main class="shell">
   <header class="site-header" data-reveal>
     <a class="brand" href="/">certy</a>
-    <nav class="links">
-      <a href="/">Início</a>
-      <a href="/">FAQ</a>
-      <a href="/termos">Termos</a>
+    <button
+      type="button"
+      class="nav-toggle"
+      aria-label={mobileNavOpen ? 'Fechar menu' : 'Abrir menu'}
+      aria-expanded={mobileNavOpen}
+      on:click={toggleMobileNav}
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <nav class="links" class:links-open={mobileNavOpen}>
+      <a href="/" on:click={closeMobileNav}>Início</a>
+      <a href="/#faq" on:click={closeMobileNav}>FAQ</a>
+      <a href="/termos" on:click={closeMobileNav}>Termos</a>
     </nav>
   </header>
 
