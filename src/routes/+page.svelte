@@ -344,7 +344,7 @@
 </script>
 
 <svelte:head>
-  <script type="application/ld+json">{homeSeoJsonLd}</script>
+  {@html `<script type="application/ld+json">${homeSeoJsonLd}</script>`}
 </svelte:head>
 
 <main class="shell">
