@@ -1,9 +1,19 @@
 {
   "name": "certy-frontend",
   "version": "0.1.0",
-  "private": true,
+  "devDependencies": {
+    "@sveltejs/adapter-cloudflare": "^7.2.8",
+    "@sveltejs/kit": "^2.60.1",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@types/node": "^25.8.0",
+    "@typescript-eslint/types": "^8.59.3",
+    "svelte": "^5.55.7",
+    "svelte-check": "^4.4.8",
+    "vite": "^7.3.3",
+    "wrangler": "^4.92.0"
+  },
   "packageManager": "bun@1.3.8",
-  "type": "module",
+  "private": true,
   "scripts": {
     "dev": "vite dev",
     "w:dev": "wrangler dev",
@@ -12,15 +22,5 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "deploy": "bun run build && bunx wrangler deploy"
   },
-  "devDependencies": {
-    "@types/node": "^24.12.0",
-    "@typescript-eslint/types": "^8.56.1",
-    "@sveltejs/adapter-cloudflare": "^7.2.8",
-    "@sveltejs/kit": "^2.53.4",
-    "@sveltejs/vite-plugin-svelte": "^6.2.4",
-    "svelte": "^5.53.7",
-    "svelte-check": "^4.4.4",
-    "vite": "^7.3.1",
-    "wrangler": "^4.71.0"
-  }
+  "type": "module"
 }

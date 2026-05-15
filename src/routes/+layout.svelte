@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { navigating, page } from '$app/stores';
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
   import '../app.css';
 
   type ToastTone = 'info' | 'success' | 'error';
@@ -260,6 +261,12 @@
 
     setTheme(initialTheme, false);
 
+    const loader = document.getElementById('certy-loader');
+    if (loader) {
+      loader.classList.add('certy-loader-out');
+      setTimeout(() => { loader.remove(); }, 400);
+    }
+
     const handleSystemThemeChange = (event: MediaQueryListEvent): void => {
       const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
       if (savedTheme === 'light' || savedTheme === 'dark') {
@@ -354,7 +361,15 @@
   {/if}
 </svelte:head>
 
-<slot />
+{#if $navigating}
+  <div class="nav-progress" aria-hidden="true"></div>
+{/if}
+
+{#key $page.url.pathname}
+  <div in:fade={{ duration: 180, delay: 40 }}>
+    <slot />
+  </div>
+{/key}
 
 <button
   class="theme-toggle"
@@ -406,6 +421,21 @@
 {/if}
 
 <style>
+  .nav-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    z-index: 99998;
+    background: var(--brand-green);
+    animation: nav-progress-fill 4s ease-out forwards;
+  }
+
+  @keyframes nav-progress-fill {
+    from { width: 0%; }
+    to { width: 90%; }
+  }
+
   :global(body),
   :global(body *) {
     -webkit-user-select: none;

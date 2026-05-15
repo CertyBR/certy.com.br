@@ -4,8 +4,48 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     %sveltekit.head%
+    <style>
+      #certy-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        display: grid;
+        place-items: center;
+        background: #f8f5ef;
+        transition: opacity 360ms ease;
+      }
+      #certy-loader[data-theme='dark'] { background: #0d1210; }
+      @media (prefers-color-scheme: dark) {
+        #certy-loader:not([data-theme='light']) { background: #0d1210; }
+        #certy-loader:not([data-theme='light']) .certy-loader-brand { color: #e9f2eb; }
+      }
+      #certy-loader.certy-loader-out { opacity: 0; pointer-events: none; }
+      .certy-loader-brand {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 2.4rem;
+        letter-spacing: 0.02em;
+        color: #1f1d1a;
+        animation: certy-pulse 1.6s ease-in-out infinite;
+      }
+      #certy-loader[data-theme='dark'] .certy-loader-brand { color: #e9f2eb; }
+      @keyframes certy-pulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+      }
+    </style>
   </head>
   <body data-sveltekit-preload-data="hover">
+    <div id="certy-loader" aria-hidden="true">
+      <span class="certy-loader-brand">certy</span>
+    </div>
+    <script>
+      try {
+        var t = localStorage.getItem('certy-theme');
+        if (t === 'dark' || t === 'light') {
+          document.getElementById('certy-loader').setAttribute('data-theme', t);
+        }
+      } catch (e) {}
+    </script>
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>
