@@ -7,7 +7,7 @@
   "vars": {
     "PUBLIC_API_BASE_URL": "https://certy.com.br/",
     "PUBLIC_EMAIL_VALIDATION_API_URL": "https://api.likn.dev/v1/public/email-validation/validate",
-    "PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAADGgreyGnaiZBgqw",
+    "PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAADQDRpqIWry9m8Cb",
   },
   "secrets": {
     "required": ["TURNSTILE_SECRET_KEY"],

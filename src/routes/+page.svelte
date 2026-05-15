@@ -2,6 +2,7 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { env } from '$env/dynamic/public';
   import {
     createCertificateSession,
     hasApiBaseUrl,
@@ -9,6 +10,8 @@
     type EmailValidationPayload
   } from '$lib/api/certy';
   import { notify } from '$lib/toast';
+
+  const turnstileSiteKey = env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   interface Benefit {
     title: string;
@@ -119,6 +122,8 @@
   let isValidatingEmail = false;
   let hashModal: HashModal | null = null;
   let mobileNavOpen = false;
+  let turnstileToken = '';
+  let turnstileWidgetId = '';
 
   function toggleMobileNav(): void {
     mobileNavOpen = !mobileNavOpen;
@@ -155,8 +160,38 @@
       window.history.replaceState(null, '', `${url.pathname}${url.search}`);
     }
 
+    // Render Turnstile widget if site key is configured
+    if (turnstileSiteKey) {
+      const renderWidget = (): void => {
+        const w = window as Window & { turnstile?: { render: (el: string, opts: object) => string; remove: (id: string) => void } };
+        if (!w.turnstile) return;
+        turnstileWidgetId = w.turnstile.render('#turnstile-widget', {
+          sitekey: turnstileSiteKey,
+          theme: 'auto',
+          callback: (token: string) => { turnstileToken = token; },
+          'expired-callback': () => { turnstileToken = ''; },
+          'error-callback': () => { turnstileToken = ''; }
+        });
+      };
+
+      if ((window as Window & { turnstile?: unknown }).turnstile) {
+        renderWidget();
+      } else {
+        const poll = setInterval(() => {
+          if ((window as Window & { turnstile?: unknown }).turnstile) {
+            clearInterval(poll);
+            renderWidget();
+          }
+        }, 80);
+      }
+    }
+
     return () => {
       window.removeEventListener('keydown', handleModalKeydown);
+      const w = window as Window & { turnstile?: { remove: (id: string) => void } };
+      if (w.turnstile && turnstileWidgetId) {
+        w.turnstile.remove(turnstileWidgetId);
+      }
     };
   });
 
@@ -299,10 +334,19 @@
       return;
     }
 
+    if (turnstileSiteKey && !turnstileToken) {
+      notify('Por favor, complete o desafio de segurança.', 'error');
+      return;
+    }
+
     isCreating = true;
 
     try {
-      const payload = await createCertificateSession({ domain, email });
+      const payload = await createCertificateSession({
+        domain,
+        email,
+        ...(turnstileToken ? { turnstile_token: turnstileToken } : {})
+      });
       const createdSessionId = payload?.session_id?.trim();
 
       if (!createdSessionId) {
@@ -313,6 +357,12 @@
       await goto(`/emitir?session=${encodeURIComponent(createdSessionId)}`);
     } catch (error) {
       notify(asStringError(error), 'error');
+      // Reset widget so user can try again with a fresh token
+      const w = window as Window & { turnstile?: { reset: (id: string) => void } };
+      if (w.turnstile && turnstileWidgetId) {
+        w.turnstile.reset(turnstileWidgetId);
+        turnstileToken = '';
+      }
     } finally {
       isCreating = false;
     }
@@ -345,6 +395,9 @@
 
 <svelte:head>
   {@html `<script type="application/ld+json">${homeSeoJsonLd}</script>`}
+  {#if turnstileSiteKey}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  {/if}
 </svelte:head>
 
 <main class="shell">
@@ -385,6 +438,7 @@
           scrollToSection('faq');
         }}>FAQ</a
       >
+      <a href="/verificar" on:click={closeMobileNav}>Verificar SSL</a>
       <a href="https://zerocert.com.br" target="_blank" rel="noreferrer" on:click={closeMobileNav}
         >ZeroCert</a
       >
@@ -448,11 +502,15 @@
         {/if}
       </label>
 
+      {#if turnstileSiteKey}
+        <div id="turnstile-widget" class="turnstile-wrap"></div>
+      {/if}
+
       <div class="actions">
         <button
           class="btn btn-primary"
           type="submit"
-          disabled={isCreating || isValidatingEmail || !hasApiBaseUrl()}
+          disabled={isCreating || isValidatingEmail || !hasApiBaseUrl() || (turnstileSiteKey !== '' && !turnstileToken)}
         >
           {isCreating ? 'Criando sessão...' : 'Criar sessão'}
         </button>

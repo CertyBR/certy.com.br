@@ -480,6 +480,7 @@
     </button>
     <nav class="links" class:links-open={mobileNavOpen}>
       <a href="/" on:click={closeMobileNav}>Início</a>
+      <a href="/verificar" on:click={closeMobileNav}>Verificar SSL</a>
       <a href="/#faq" on:click={closeMobileNav}>FAQ</a>
       <a href="/termos" on:click={closeMobileNav}>Termos</a>
     </nav>

@@ -18,6 +18,7 @@ export interface DnsRecord {
 export interface CreateSessionInput {
   domain: string;
   email: string;
+  turnstile_token?: string;
 }
 
 export interface VerifyEmailCodeInput {
@@ -184,6 +185,36 @@ export function finalizeCertificateSession(sessionId: string): Promise<SessionPa
   return request<SessionPayload>(`/api/v1/certificates/sessions/${encodedSessionId}/finalize`, {
     method: 'POST'
   });
+}
+
+export interface CertInfo {
+  serial: string;
+  issuer: string;
+  issuer_o: string;
+  issuer_cn: string;
+  common_name: string;
+  sans: string[];
+  not_before: string;
+  not_after: string;
+  days_remaining: number;
+  is_expired: boolean;
+  is_wildcard: boolean;
+  ct_id: number;
+}
+
+export interface CertCheckPayload {
+  host: string;
+  site_ok: boolean;
+  site_error: string | null;
+  redirects_to: string | null;
+  cert: CertInfo | null;
+  total_ct_certs: number;
+  active_ct_certs: number;
+  error?: string;
+}
+
+export function checkCertificate(host: string): Promise<CertCheckPayload> {
+  return request<CertCheckPayload>(`/api/v1/certificates/check?host=${encodeURIComponent(host)}`);
 }
 
 export async function validateEmailAddress(email: string): Promise<EmailValidationPayload> {

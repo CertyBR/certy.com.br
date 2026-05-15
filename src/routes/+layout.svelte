@@ -40,7 +40,8 @@
   const ROUTE_TITLES: Record<string, string> = {
     '/': 'Início',
     '/emitir': 'Acompanhar Sessão',
-    '/termos': 'Termos de Uso e Privacidade'
+    '/termos': 'Termos de Uso e Privacidade',
+    '/verificar': 'Verificar Certificado SSL'
   };
   const ROUTE_SEO: Record<string, RouteSeoMeta> = {
     '/': {
@@ -57,6 +58,11 @@
     '/termos': {
       title: 'Termos de Uso e Privacidade',
       description: 'Termos de Uso e Política de Privacidade do Certy.'
+    },
+    '/verificar': {
+      title: 'Verificar Certificado SSL',
+      description:
+        'Verifique o certificado SSL de qualquer site. Veja emissor, validade, domínios cobertos e status de segurança em tempo real.'
     }
   };
 

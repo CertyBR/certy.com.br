@@ -383,6 +383,9 @@ textarea:disabled {
   width: min(1080px, 92vw);
   margin: 0 auto;
   padding: 1.2rem 0 3rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 section {
@@ -649,6 +652,11 @@ code {
 .issue-form {
   display: grid;
   gap: 0.75rem;
+}
+
+.turnstile-wrap {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .issue-form .actions {
@@ -1032,7 +1040,7 @@ code {
 }
 
 .site-footer {
-  margin-top: 2rem;
+  margin-top: auto;
   border-top: 1px solid var(--line);
   padding-top: 1rem;
   font-size: 0.82rem;
