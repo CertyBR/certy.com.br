@@ -12,6 +12,7 @@
   import { notify } from '$lib/toast';
 
   const turnstileSiteKey = env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+  const TURNSTILE_SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
 
   interface Benefit {
     title: string;
@@ -28,6 +29,11 @@
   }
 
   type HashModal = 'faq' | 'beneficios';
+  type TurnstileApi = {
+    render: (el: HTMLElement, opts: object) => string;
+    remove: (id: string) => void;
+    reset: (id: string) => void;
+  };
 
   const benefits: Benefit[] = [
     {
@@ -124,6 +130,46 @@
   let mobileNavOpen = false;
   let turnstileToken = '';
   let turnstileWidgetId = '';
+  let turnstileScriptPromise: Promise<void> | null = null;
+
+  function getTurnstile(): TurnstileApi | undefined {
+    return (window as Window & { turnstile?: TurnstileApi }).turnstile;
+  }
+
+  function loadTurnstileScript(): Promise<void> {
+    if (getTurnstile()) {
+      return Promise.resolve();
+    }
+
+    if (turnstileScriptPromise) {
+      return turnstileScriptPromise;
+    }
+
+    turnstileScriptPromise = new Promise((resolve, reject) => {
+      const existingScript = document.querySelector<HTMLScriptElement>(
+        `script[src="${TURNSTILE_SCRIPT_SRC}"]`
+      );
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(), { once: true });
+        existingScript.addEventListener(
+          'error',
+          () => reject(new Error('Falha ao carregar o desafio de segurança.')),
+          { once: true }
+        );
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = TURNSTILE_SCRIPT_SRC;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Falha ao carregar o desafio de segurança.'));
+      document.head.appendChild(script);
+    });
+
+    return turnstileScriptPromise;
+  }
 
   function toggleMobileNav(): void {
     mobileNavOpen = !mobileNavOpen;
@@ -160,37 +206,35 @@
       window.history.replaceState(null, '', `${url.pathname}${url.search}`);
     }
 
-    // Render Turnstile widget if site key is configured
     if (turnstileSiteKey) {
-      const renderWidget = (): void => {
-        const w = window as Window & { turnstile?: { render: (el: string, opts: object) => string; remove: (id: string) => void } };
-        if (!w.turnstile) return;
-        turnstileWidgetId = w.turnstile.render('#turnstile-widget', {
-          sitekey: turnstileSiteKey,
-          theme: 'auto',
-          callback: (token: string) => { turnstileToken = token; },
-          'expired-callback': () => { turnstileToken = ''; },
-          'error-callback': () => { turnstileToken = ''; }
-        });
-      };
+      void loadTurnstileScript()
+        .then(() => {
+          const turnstile = getTurnstile();
+          const widget = document.getElementById('turnstile-widget');
+          if (!turnstile || !(widget instanceof HTMLElement) || turnstileWidgetId) return;
 
-      if ((window as Window & { turnstile?: unknown }).turnstile) {
-        renderWidget();
-      } else {
-        const poll = setInterval(() => {
-          if ((window as Window & { turnstile?: unknown }).turnstile) {
-            clearInterval(poll);
-            renderWidget();
-          }
-        }, 80);
-      }
+          turnstileWidgetId = turnstile.render(widget, {
+            sitekey: turnstileSiteKey,
+            theme: 'auto',
+            callback: (token: string) => {
+              turnstileToken = token;
+            },
+            'expired-callback': () => {
+              turnstileToken = '';
+            },
+            'error-callback': () => {
+              turnstileToken = '';
+            }
+          });
+        })
+        .catch((error) => notify(asStringError(error), 'error'));
     }
 
     return () => {
       window.removeEventListener('keydown', handleModalKeydown);
-      const w = window as Window & { turnstile?: { remove: (id: string) => void } };
-      if (w.turnstile && turnstileWidgetId) {
-        w.turnstile.remove(turnstileWidgetId);
+      const turnstile = getTurnstile();
+      if (turnstile && turnstileWidgetId) {
+        turnstile.remove(turnstileWidgetId);
       }
     };
   });
@@ -358,9 +402,9 @@
     } catch (error) {
       notify(asStringError(error), 'error');
       // Reset widget so user can try again with a fresh token
-      const w = window as Window & { turnstile?: { reset: (id: string) => void } };
-      if (w.turnstile && turnstileWidgetId) {
-        w.turnstile.reset(turnstileWidgetId);
+      const turnstile = getTurnstile();
+      if (turnstile && turnstileWidgetId) {
+        turnstile.reset(turnstileWidgetId);
         turnstileToken = '';
       }
     } finally {
@@ -395,9 +439,6 @@
 
 <svelte:head>
   {@html `<script type="application/ld+json">${homeSeoJsonLd}</script>`}
-  {#if turnstileSiteKey}
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  {/if}
 </svelte:head>
 
 <main class="shell">
