@@ -3,6 +3,7 @@ node_modules
 .wrangler
 build
 dist
+coverage
 .DS_Store
 backend
 .env
