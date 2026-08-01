@@ -8,3 +8,4 @@ backend
 .env
 .env.*
 !.env.example
+.dev.vars
